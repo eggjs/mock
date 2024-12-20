@@ -44,7 +44,9 @@ module.exports = {
       }
     }
 
-    options = Object.assign({ mockCtxStorage: true }, options);
+    // try to use app.options.mockCtxStorage first
+    const mockCtxStorage = this.options.mockCtxStorage ?? true;
+    options = Object.assign({ mockCtxStorage }, options);
     data = data || {};
 
     if (this._customMockContext) {
@@ -204,6 +206,7 @@ module.exports = {
     if (!headers['x-forwarded-for']) {
       headers['x-forwarded-for'] = '127.0.0.1';
     }
+    headers['x-mock-request-from'] = 'egg-mock';
     req.headers = headers;
     merge(req, {
       query: {},

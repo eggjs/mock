@@ -125,6 +125,11 @@ export interface MockOption {
    * Remove $baseDir/logs
    */
   clean?: boolean;
+
+  /**
+   * default options.mockCtxStorage value on each mockContext
+   */
+  mockCtxStorage?: boolean;
 }
 
 export interface MockClusterOption extends MockOption {
