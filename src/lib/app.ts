@@ -1,25 +1,21 @@
-const debug = require('util').debuglog('egg-mock:lib:app');
-const os = require('os');
-const path = require('path');
-const EventEmitter = require('events');
-const co = require('co');
-const is = require('is-type-of');
-const { Ready } = require('get-ready');
-const { detectPort } = require('detect-port');
-const ConsoleLogger = require('egg-logger').EggConsoleLogger;
-const { sleep, rimraf } = require('./utils');
-const formatOptions = require('./format_options');
-const context = require('./context');
-const mockCustomLoader = require('./mock_custom_loader');
-const mockHttpServer = require('./mock_http_server');
+import { debuglog } from 'node:util';
+import os from 'node:os';
+import path from 'node:path';
+import { Base } from 'sdk-base';
+import { detectPort } from 'detect-port';
+import type { Agent, Application } from 'egg';
+import { importModule } from '@eggjs/utils';
+import { sleep, rimraf, getProperty } from './utils.js';
+import { formatOptions } from './format_options.js';
+import context from './context.js';
+import mockCustomLoader from './mock_custom_loader.js';
+import mockHttpServer from './mock_http_server.js';
+import type { MockOptions, MockApplicationOptions } from './types.js';
 
-const consoleLogger = new ConsoleLogger({ level: 'INFO' });
+const debug = debuglog('egg-mock:lib:app');
+
 const apps = new Map();
-const INIT = Symbol('init');
 const APP_INIT = Symbol('appInit');
-const BIND_EVENT = Symbol('bindEvent');
-const INIT_ON_LISTENER = Symbol('initOnListener');
-const INIT_ONCE_LISTENER = Symbol('initOnceListener');
 const MESSENGER = Symbol('messenger');
 const MOCK_APP_METHOD = [
   'ready',
@@ -32,64 +28,59 @@ const MOCK_APP_METHOD = [
   'then',
 ];
 
-class MockApplication extends EventEmitter {
-  constructor(options) {
-    super();
-    this.options = options;
-    this.baseDir = options.baseDir;
-    this.closed = false;
-    this[APP_INIT] = false;
-    this[INIT_ON_LISTENER] = new Set();
-    this[INIT_ONCE_LISTENER] = new Set();
-    Ready.mixin(this);
-    // listen once, otherwise will throw exception when emit error without listenr
-    this.once('error', () => {});
+export class MockApplication extends Base {
+  _agent: Agent;
+  _app: Application;
+  declare options: MockApplicationOptions;
+  baseDir: string;
+  closed = false;
+  [APP_INIT] = false;
+  #initOnListeners = new Set<any[]>();
+  #initOnceListeners = new Set<any[]>();
 
-    co(this[INIT].bind(this))
-      .then(() => this.ready(true))
-      .catch(err => {
-        if (!this[APP_INIT]) {
-          this.emit('error', err);
-        }
-        consoleLogger.error(err);
-        this.ready(err);
-      });
+  constructor(options: MockApplicationOptions) {
+    super({
+      initMethod: '_init',
+      ...options,
+    });
+    this.baseDir = options.baseDir;
+    // listen once, otherwise will throw exception when emit error without listener
+    // this.once('error', () => {});
   }
 
-  * [INIT]() {
+  async _init() {
     if (this.options.beforeInit) {
-      yield this.options.beforeInit(this);
-      delete this.options.beforeInit;
+      await this.options.beforeInit(this);
+      // init once
+      this.options.beforeInit = undefined;
     }
     if (this.options.clean !== false) {
       const logDir = path.join(this.options.baseDir, 'logs');
       try {
-        /* istanbul ignore if */
-        if (os.platform() === 'win32') yield sleep(1000);
-        yield rimraf(logDir);
-      } catch (err) {
-        /* istanbul ignore next */
+        if (os.platform() === 'win32') await sleep(1000);
+        await rimraf(logDir);
+      } catch (err: any) {
         console.error(`remove log dir ${logDir} failed: ${err.stack}`);
       }
     }
 
-    this.options.clusterPort = yield detectPort();
+    this.options.clusterPort = await detectPort();
     debug('get clusterPort %s', this.options.clusterPort);
-    const egg = require(this.options.framework);
+    const egg = await importModule(this.options.framework);
 
     const Agent = egg.Agent;
-    const agent = this._agent = new Agent(Object.assign({}, this.options));
+    const agent = this._agent = new Agent({ ...this.options }) as Agent;
     debug('agent instantiate');
-    yield agent.ready();
+    await agent.ready();
     debug('agent ready');
 
-    const Application = bindMessenger(egg.Application, agent);
-    const app = this._app = new Application(Object.assign({}, this.options));
+    const ApplicationClass = bindMessenger(egg.Application, agent);
+    const app = this._app = new ApplicationClass({ ...this.options }) as Application;
 
     // https://github.com/eggjs/egg/blob/8bb7c7e7d59d6aeca4b2ed1eb580368dcb731a4d/lib/egg.js#L125
     // egg single mode mount this at start(), so egg-mock should impel it.
     app.agent = agent;
-    agent.app = app;
+    Reflect.set(agent, 'app', app);
 
     // egg-mock plugin need to override egg context
     Object.assign(app.context, context);
@@ -97,10 +88,10 @@ class MockApplication extends EventEmitter {
     debug('app instantiate');
     this[APP_INIT] = true;
     debug('this[APP_INIT] = true');
-    this[BIND_EVENT]();
+    this.#bindEvent();
     debug('http server instantiate');
     mockHttpServer(app);
-    yield app.ready();
+    await app.ready();
     // work for config ready
     mockCustomLoader(app);
 
@@ -113,69 +104,72 @@ class MockApplication extends EventEmitter {
     debug('app ready');
   }
 
-  [BIND_EVENT]() {
-    for (const args of this[INIT_ON_LISTENER]) {
+  #bindEvent() {
+    for (const args of this.#initOnListeners) {
       debug('on(%s), use cache and pass to app', args);
-      this._app.on(...args);
-      this.removeListener(...args);
+      this._app.on(args[0], args[1]);
+      this.removeListener(args[0], args[1]);
     }
-    for (const args of this[INIT_ONCE_LISTENER]) {
+    for (const args of this.#initOnceListeners) {
       debug('once(%s), use cache and pass to app', args);
-      this._app.on(...args);
-      this.removeListener(...args);
+      this._app.on(args[0], args[1]);
+      this.removeListener(args[0], args[1]);
     }
   }
 
-  on(...args) {
+  on(...args: any[]) {
     if (this[APP_INIT]) {
       debug('on(%s), pass to app', args);
-      this._app.on(...args);
+      this._app.on(args[0], args[1]);
     } else {
       debug('on(%s), cache it because app has not init', args);
-      this[INIT_ON_LISTENER].add(args);
-      super.on(...args);
+      this.#initOnListeners.add(args);
+      super.on(args[0], args[1]);
     }
+    return this;
   }
 
-  once(...args) {
+  once(...args: any[]) {
     if (this[APP_INIT]) {
       debug('once(%s), pass to app', args);
-      this._app.once(...args);
+      this._app.once(args[0], args[1]);
     } else {
       debug('once(%s), cache it because app has not init', args);
-      this[INIT_ONCE_LISTENER].add(args);
-      super.on(...args);
+      this.#initOnceListeners.add(args);
+      super.once(args[0], args[1]);
     }
+    return this;
   }
 
   /**
    * close app
    * @return {Promise} promise
    */
-  close() {
+  async close(): Promise<void> {
     this.closed = true;
     const self = this;
     const baseDir = this.baseDir;
-    return co(function* () {
-      if (self._app) {
-        yield self._app.close();
-      } else {
-        // when app init throws an exception, must wait for app quit gracefully
-        yield sleep(200);
-      }
+    if (self._app) {
+      await self._app.close();
+    } else {
+      // when app init throws an exception, must wait for app quit gracefully
+      await sleep(200);
+    }
 
-      if (self._agent) yield self._agent.close();
+    if (self._agent) {
+      await self._agent.close();
+    }
 
-      apps.delete(baseDir);
-      debug('delete app cache %s, remain %s', baseDir, [ ...apps.keys() ]);
+    apps.delete(baseDir);
+    debug('delete app cache %s, remain %s', baseDir, [ ...apps.keys() ]);
 
-      /* istanbul ignore if */
-      if (os.platform() === 'win32') yield sleep(1000);
-    });
+    if (os.platform() === 'win32') {
+      await sleep(1000);
+    }
   }
 }
 
-module.exports = function(options) {
+export function createApp(options: MockOptions) {
   options = formatOptions(options);
   if (options.cache && apps.has(options.baseDir)) {
     const app = apps.get(options.baseDir);
@@ -238,16 +232,7 @@ module.exports = function(options) {
 
   apps.set(options.baseDir, app);
   return app;
-};
-
-function getProperty(target, prop) {
-  const member = target[prop];
-  if (is.function(member)) {
-    return member.bind(target);
-  }
-  return member;
 }
-
 
 function bindMessenger(Application, agent) {
   const agentMessenger = agent.messenger;

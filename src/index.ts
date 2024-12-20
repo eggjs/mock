@@ -1,30 +1,19 @@
 import mm from 'mm';
-import cluster from './lib/cluster';
-import app from './lib/app';
-import mockAgent from './lib/mock_agent';
+import cluster from './lib/cluster.js';
+import app from './lib/app.js';
+import mockAgent from './lib/mock_agent.js';
+import { restore } from './lib/restore.js';
+import { setGetAppCallback } from './lib/app_handler.js';
 
 // egg-bin will set this flag to require files for instrument
-if (process.env.EGG_BIN_PREREQUIRE) {
-  require('./lib/prerequire');
-}
-
-/**
- * @namespace mm
- */
-
-function mock(...args) {
-  return mm(...args);
-}
-module.exports = mock;
-module.exports.default = mock;
-module.exports.mm = mock;
+// if (process.env.EGG_BIN_PREREQUIRE) {
+//   require('./lib/prerequire');
+// }
 
 // inherit & extends mm
-Object.assign(mock, mm, {
-  async restore() {
-    cluster.restore();
-    await Promise.all([ mockAgent.restore(), mm.restore() ]);
-  },
+const mock = {
+  ...mm,
+  restore,
 
   /**
    * Create a egg mocked application
@@ -57,7 +46,7 @@ Object.assign(mock, mm, {
    * @param {String} env - contain default, test, prod, local, unittest
    * @see https://github.com/eggjs/egg-core/blob/master/lib/loader/egg_loader.js#L78
    */
-  env(env) {
+  env(env: string) {
     mm(process.env, 'EGG_MOCK_SERVER_ENV', env);
     mm(process.env, 'EGG_SERVER_ENV', env);
   },
@@ -66,19 +55,26 @@ Object.assign(mock, mm, {
    * mock console level
    * @param {String} level - logger level
    */
-  consoleLevel(level) {
+  consoleLevel(level: string) {
     level = (level || '').toUpperCase();
     mm(process.env, 'EGG_LOG', level);
   },
 
-  home(homePath) {
+  home(homePath: string) {
     if (homePath) {
       mm(process.env, 'EGG_HOME', homePath);
     }
   },
 
-  setGetAppCallback: require('./lib/app_handler').setGetAppCallback,
-});
+  setGetAppCallback,
+};
+
+export default mock;
+export {
+  mock,
+  // alias to mm
+  mock as mm,
+};
 
 process.setMaxListeners(100);
 

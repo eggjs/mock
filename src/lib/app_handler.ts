@@ -1,10 +1,14 @@
-const debug = require('util').debuglog('egg-mock:bootstrap:app_handler');
-const mockParallelApp = require('./parallel/app');
-const { setupAgent } = require('./agent_handler');
-const mock = require('../index').default;
-const { getEggOptions } = require('./utils');
+import { debuglog } from 'node:util';
+import mockParallelApp from './parallel/app.js';
+import { setupAgent } from './agent_handler.js';
+import { createApp } from './app.js';
+import { restore } from './restore.js';
+import { getEggOptions } from './utils.js';
+import Application from '../app/extend/application.js';
 
-let app;
+const debug = debuglog('@eggjs/mock/lib/app_handler');
+
+let app: Application;
 
 exports.setupApp = () => {
   if (app) {
@@ -27,12 +31,12 @@ exports.setupApp = () => {
     });
     debug('mockParallelApp app: %s', !!app);
   } else {
-    app = mock.app(options);
+    app = createApp(options);
     if (typeof beforeAll === 'function') {
       // jest
       beforeAll(() => app.ready());
       afterEach(() => app.backgroundTasksFinished());
-      afterEach(mock.restore);
+      afterEach(restore);
     }
   }
 };

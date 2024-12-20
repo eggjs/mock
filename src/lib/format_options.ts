@@ -1,21 +1,24 @@
-const debug = require('util').debuglog('mm');
-const path = require('path');
-const mm = require('mm');
-const utils = require('@eggjs/utils');
+import { debuglog } from 'node:util';
+import path from 'node:path';
+import mm from 'mm';
+import { getFrameworkPath } from '@eggjs/utils';
+import { readJSONSync } from 'utility';
+import { MockOptions, MockApplicationOptions } from './types.js';
+import { getSourceDirname } from './utils.js';
+
+const debug = debuglog('@eggjs/mock/lib/format_options');
 
 /**
  * format the options
- * @param  {Object} options - options
- * @return {Object} options
  */
-module.exports = function formatOptions(options) {
-  const defaults = {
+export function formatOptions(initOptions: MockOptions) {
+  const options = {
     baseDir: process.cwd(),
     cache: true,
     coverage: true,
     clean: true,
-  };
-  options = Object.assign({}, defaults, options);
+    ...initOptions,
+  } as MockApplicationOptions;
 
   // relative path to test/fixtures
   // ```js
@@ -25,38 +28,39 @@ module.exports = function formatOptions(options) {
     options.baseDir = path.join(process.cwd(), 'test/fixtures', options.baseDir);
   }
 
-  let framework = options.framework || options.customEgg;
+  let framework = options.framework ?? options.customEgg;
   // test for framework
-  if (framework === true) {
+  if (initOptions.framework === true) {
     framework = process.cwd();
     // disable plugin test when framework test
     options.plugin = false;
   } else {
     // it will throw when framework is not found
-    framework = utils.getFrameworkPath({ framework, baseDir: options.baseDir });
+    framework = getFrameworkPath({ framework, baseDir: options.baseDir });
   }
-  options.customEgg = options.framework = framework;
+  options.framework = framework;
 
   const plugins = options.plugins = options.plugins || {};
 
   // add self as a plugin
   plugins['egg-mock'] = {
     enable: true,
-    path: path.join(__dirname, '..'),
+    path: getSourceDirname(),
   };
 
   // test for plugin
   if (options.plugin !== false) {
     // add self to plugin list
-    const pkgPath = path.join(process.cwd(), 'package.json');
+    const pluginPath = process.cwd();
+    const pkgPath = path.join(pluginPath, 'package.json');
     const pluginName = getPluginName(pkgPath);
     if (options.plugin && !pluginName) {
-      throw new Error(`should set eggPlugin in ${pkgPath}`);
+      throw new Error(`should set "eggPlugin" property in ${pkgPath}`);
     }
     if (pluginName) {
       plugins[pluginName] = {
         enable: true,
-        path: process.cwd(),
+        path: pluginPath,
       };
     }
   }
@@ -76,12 +80,12 @@ module.exports = function formatOptions(options) {
 
   debug('format options: %j', options);
   return options;
-};
+}
 
-function getPluginName(pkgPath) {
+function getPluginName(pkgPath: string): string | undefined {
   try {
-    const pkg = require(pkgPath);
-    if (pkg.eggPlugin && pkg.eggPlugin.name) {
+    const pkg = readJSONSync(pkgPath);
+    if (pkg.eggPlugin?.name) {
       return pkg.eggPlugin.name;
     }
   } catch (_) {
