@@ -21,7 +21,7 @@ export interface BaseMockApplication<T, C> extends Application {
   /**
    * mock Context
    */
-  mockContext(data?: any): C;
+  mockContext(data?: any, options?: any): C;
 
   /**
    * mock Context

@@ -1,23 +1,24 @@
-# egg-mock
+# @eggjs/mock
 
 [![NPM version][npm-image]][npm-url]
-[![Node.js CI](https://github.com/eggjs/egg-mock/actions/workflows/nodejs.yml/badge.svg)](https://github.com/eggjs/egg-mock/actions/workflows/nodejs.yml)
+[![Node.js CI](https://github.com/eggjs/mock/actions/workflows/nodejs.yml/badge.svg)](https://github.com/eggjs/mock/actions/workflows/nodejs.yml)
 [![Test coverage][codecov-image]][codecov-url]
 [![npm download][download-image]][download-url]
 
-[npm-image]: https://img.shields.io/npm/v/egg-mock.svg?style=flat-square
-[npm-url]: https://npmjs.org/package/egg-mock
-[codecov-image]: https://codecov.io/github/eggjs/egg-mock/coverage.svg?branch=master
-[codecov-url]: https://codecov.io/github/eggjs/egg-mock?branch=master
-[download-image]: https://img.shields.io/npm/dm/egg-mock.svg?style=flat-square
-[download-url]: https://npmjs.org/package/egg-mock
+[npm-image]: https://img.shields.io/npm/v/@eggjs/mock.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/@eggjs/mock
+[codecov-image]: https://codecov.io/github/eggjs/mock/coverage.svg?branch=master
+[codecov-url]: https://codecov.io/github/eggjs/mock?branch=master
+[download-image]: https://img.shields.io/npm/dm/@eggjs/mock.svg?style=flat-square
+[download-url]: https://npmjs.org/package/@eggjs/mock
 
-一个数据模拟的库，更方便地测试 Egg 应用、插件及自定义 Egg 框架。`egg-mock` 拓展自 [node_modules/mm](https://github.com/node-modules/mm)，你可以使用所有 `mm` 包含的 API。
+一个数据模拟的库，更方便地测试 Egg 应用、插件及自定义 Egg 框架。
+`@eggjs/mock` 拓展自 [node_modules/mm](https://github.com/node-modules/mm)，你可以使用所有 `mm` 包含的 API。
 
 ## Install
 
 ```bash
-$ npm i egg-mock --save-dev
+npm i egg-mock --save-dev
 ```
 
 ## Usage
@@ -29,7 +30,7 @@ $ npm i egg-mock --save-dev
 ```js
 // test/index.test.js
 const path = require('path');
-const mm = require('egg-mock');
+const mm = require('@eggjs/mock');
 
 describe('some test', () => {
   let app;
@@ -145,7 +146,8 @@ before(() => {
 创建一个多进程应用，因为是多进程应用，无法获取 worker 的属性，只能通过 supertest 请求。
 
 ```js
-const mm = require('egg-mock');
+const mm = require('@eggjs/mock');
+
 describe('test/app.js', () => {
   let app, config;
   before(() => {
@@ -387,12 +389,12 @@ console.log(ctx.session.foo);
 ### app.mockService(service, methodName, fn)
 
 ```js
-it('should mock user name', function* () {
-  app.mockService('user', 'getName', function* (ctx, methodName, args) {
+it('should mock user name', async function() {
+  app.mockService('user', 'getName', async function(ctx, methodName, args) {
     return 'popomore';
   });
   const ctx = app.mockContext();
-  yield ctx.service.user.getName();
+  await ctx.service.user.getName();
 });
 ```
 
@@ -443,7 +445,7 @@ return app.httpRequest()
 我们提供了一个 bootstrap 来减少单测中的重复代码:
 
 ```js
-const { app, mock, assert } = require('egg-mock/bootstrap');
+const { app, mock, assert } = require('@eggjs/mock/bootstrap');
 
 describe('test app', () => {
   it('should request success', () => {
@@ -470,7 +472,7 @@ describe('test ctx', () => {
 并且第一次使用 `app.mockContext` 会自动复用当前 case 的上下文。
 
 ```js
-const { app, mock, assert } = require('egg-mock/bootstrap');
+const { app, mock, assert } = require('@eggjs/mock/bootstrap');
 
 describe('test ctx', () => {
   it('should can use ctx', () => {
@@ -508,6 +510,6 @@ Please open an issue [here](https://github.com/eggjs/egg/issues).
 
 ## Contributors
 
-[![Contributors](https://contrib.rocks/image?repo=eggjs/egg-mock)](https://github.com/eggjs/egg-mock/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=eggjs/mock)](https://github.com/eggjs/mock/graphs/contributors)
 
 Made with [contributors-img](https://contrib.rocks).

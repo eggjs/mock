@@ -1,5 +1,3 @@
-'use strict';
-
 module.exports = app => {
   // make sure clusterAppMock position before securities
   const index = app.config.coreMiddleware.indexOf('securities');

@@ -1,7 +1,7 @@
-const mm = require('mm');
-const cluster = require('./lib/cluster');
-const app = require('./lib/app');
-const mockAgent = require('./lib/mock_agent');
+import mm from 'mm';
+import cluster from './lib/cluster';
+import app from './lib/app';
+import mockAgent from './lib/mock_agent';
 
 // egg-bin will set this flag to require files for instrument
 if (process.env.EGG_BIN_PREREQUIRE) {

@@ -1,29 +1,32 @@
 {
-  "name": "egg-mock",
+  "name": "@eggjs/mock",
   "version": "6.0.0-beta.2",
-  "eggPlugin": {
-    "name": "egg-mock"
+  "publishConfig": {
+    "access": "public"
   },
-  "description": "mock server for egg",
-  "types": "index.d.ts",
-  "main": "index.js",
-  "files": [
-    "app.js",
-    "index.js",
-    "index.d.ts",
-    "bootstrap.js",
-    "bootstrap.d.ts",
-    "app",
-    "lib",
-    "register.js"
+  "eggPlugin": {
+    "name": "egg-mock",
+    "exports": {
+      "import": "./dist/esm",
+      "require": "./dist/commonjs"
+    }
+  },
+  "description": "mock server plugin for egg",
+  "homepage": "https://github.com/eggjs/mock",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eggjs/mock.git"
+  },
+  "bugs": {
+    "url": "https://github.com/eggjs/egg/issues"
+  },
+  "keywords": [
+    "egg",
+    "mock"
   ],
-  "scripts": {
-    "lint": "eslint lib app index.js test/*.test.js",
-    "tsd": "tsd",
-    "test": "npm run lint && npm run tsd && npm run test-local",
-    "test-local": "egg-bin test -r ./register.js --ts false",
-    "cov": "egg-bin cov -r ./register.js --ts false",
-    "ci": "npm run lint && npm run tsd && npm run cov"
+  "author": "popomore <sakura9515@gmail.com>",
+  "engines": {
+    "node": ">= 18.19.0"
   },
   "dependencies": {
     "@eggjs/utils": "^4.0.2",
@@ -53,35 +56,65 @@
     "@eggjs/tegg-config": "^3.2.2",
     "@eggjs/tegg-controller-plugin": "^3.2.2",
     "@eggjs/tegg-plugin": "^3.2.2",
-    "@eggjs/tsconfig": "^1.1.0",
-    "@types/mocha": "^10.0.1",
+    "@arethetypeswrong/cli": "^0.17.1",
+    "@eggjs/tsconfig": "1",
     "@types/node": "22",
+    "@types/mocha": "10",
+    "mocha": "^10.1.0",
+    "eslint": "8",
+    "eslint-config-egg": "14",
+    "tshy": "3",
+    "tshy-after": "1",
+    "typescript": "5",
     "egg": "beta",
-    "egg-bin": "^6.0.0",
+    "egg-bin": "beta",
     "egg-errors": "^2.2.1",
     "egg-tracer": "^2.0.0",
-    "eslint": "8",
-    "eslint-config-egg": "^14",
-    "mocha": "^10.1.0",
-    "pedding": "^1.1.0",
-    "tsd": "^0.31.0",
-    "typescript": "5",
     "urllib": "4"
   },
-  "homepage": "https://github.com/eggjs/egg-mock",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/eggjs/egg-mock.git"
+  "scripts": {
+    "lint": "eslint --cache src test --ext .ts",
+    "pretest": "npm run lint -- --fix && npm run prepublishOnly",
+    "test": "egg-bin test",
+    "preci": "npm run lint && npm run prepublishOnly && attw --pack",
+    "ci": "egg-bin cov",
+    "prepublishOnly": "tshy && tshy-after"
   },
-  "bugs": {
-    "url": "https://github.com/eggjs/egg/issues"
+  "type": "module",
+  "tshy": {
+    "exports": {
+      ".": "./src/index.ts",
+      "./bootstrap": "./src/bootstrap.ts",
+      "./package.json": "./package.json"
+    }
   },
-  "keywords": [
-    "egg",
-    "mock"
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/index.d.ts",
+        "default": "./dist/commonjs/index.js"
+      }
+    },
+    "./bootstrap": {
+      "import": {
+        "types": "./dist/esm/bootstrap.d.ts",
+        "default": "./dist/esm/bootstrap.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/bootstrap.d.ts",
+        "default": "./dist/commonjs/bootstrap.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src"
   ],
-  "engines": {
-    "node": ">= 18.19.0"
-  },
-  "author": "popomore <sakura9515@gmail.com>"
+  "types": "./dist/commonjs/index.d.ts",
+  "main": "./dist/commonjs/index.js"
 }
