@@ -5,9 +5,9 @@ import { app } from '../../../../bootstrap';
 describe('test/hooks.test.ts', () => {
   let beforeCtx;
   let afterCtx;
-  let beforeEachCtxList: Record<string, Context> = {};
-  let afterEachCtxList: Record<string, Context> = {};
-  let itCtxList: Record<string, Context> = {};
+  const beforeEachCtxList: Record<string, Context> = {};
+  const afterEachCtxList: Record<string, Context> = {};
+  const itCtxList: Record<string, Context> = {};
 
   before(async () => {
     beforeCtx = app.currentContext;
@@ -16,38 +16,38 @@ describe('test/hooks.test.ts', () => {
   after(() => {
     afterCtx = app.currentContext;
     assert(beforeCtx);
-    assert(beforeCtx !== itCtxList['foo']);
-    assert(itCtxList['foo'] !== itCtxList['bar']);
+    assert(beforeCtx !== itCtxList.foo);
+    assert(itCtxList.foo !== itCtxList.bar);
     assert(afterCtx === beforeCtx);
-    assert(beforeEachCtxList['foo'] === afterEachCtxList['foo']);
-    assert(beforeEachCtxList['foo'] === itCtxList['foo']);
+    assert(beforeEachCtxList.foo === afterEachCtxList.foo);
+    assert(beforeEachCtxList.foo === itCtxList.foo);
   });
 
   describe('foo', () => {
     beforeEach(() => {
-      beforeEachCtxList['foo'] = app.currentContext;
+      beforeEachCtxList.foo = app.currentContext;
     });
 
     it('should work', () => {
-      itCtxList['foo'] = app.currentContext;
+      itCtxList.foo = app.currentContext;
     });
 
     afterEach(() => {
-      afterEachCtxList['foo'] = app.currentContext;
+      afterEachCtxList.foo = app.currentContext;
     });
   });
 
   describe('bar', () => {
     beforeEach(() => {
-      beforeEachCtxList['bar'] = app.currentContext;
+      beforeEachCtxList.bar = app.currentContext;
     });
 
     it('should work', () => {
-      itCtxList['bar'] = app.currentContext;
+      itCtxList.bar = app.currentContext;
     });
 
     afterEach(() => {
-      afterEachCtxList['bar'] = app.currentContext;
+      afterEachCtxList.bar = app.currentContext;
     });
   });
 
@@ -64,6 +64,6 @@ describe('test/hooks.test.ts', () => {
 
     after(() => {
       assert(itCtxList[0] !== itCtxList[1]);
-    })
+    });
   });
 });

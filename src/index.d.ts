@@ -185,9 +185,9 @@ export interface EggMock extends MockMate {
    * then egg-mock will inject ctx for each test case
    * @param cb
    */
-  setGetAppCallback: (cb: (suite: Suite) => Promise<MockApplication> ) => void;
+  setGetAppCallback: (cb: (suite: Suite) => Promise<MockApplication>) => void;
 }
 
 declare const mm: EggMock;
-export { mm }
+export { mm };
 export default mm;

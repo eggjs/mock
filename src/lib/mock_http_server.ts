@@ -1,9 +1,8 @@
-'use strict';
+import http, { Server } from 'node:http';
 
-const http = require('http');
 const SERVER = Symbol('http_server');
 
-module.exports = app => {
+export function createServer(app: any): Server {
   let server = app[SERVER] || app.callback();
   if (typeof server === 'function') {
     server = http.createServer(server);
@@ -14,4 +13,4 @@ module.exports = app => {
     app.emit('server', server);
   }
   return server;
-};
+}

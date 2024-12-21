@@ -1,16 +1,14 @@
-'use strict';
+import path from 'node:path';
+import { strict as assert } from 'node:assert';
+import { getFixtures } from './helper.js';
+import mm, { MockApplication } from '../src/index.js';
 
-const path = require('path');
-const assert = require('assert');
-const mm = require('..');
+const fixtures = getFixtures('');
 
-const fixtures = path.join(__dirname, 'fixtures');
-
-describe('test/ctx.test.js', () => {
-
+describe('test/ctx.test.ts', () => {
   afterEach(mm.restore);
 
-  let app;
+  let app: MockApplication;
   before(done => {
     app = mm.app({
       baseDir: path.join(fixtures, 'demo'),
@@ -34,14 +32,14 @@ describe('test/ctx.test.js', () => {
     assert(ctx.request.ip === '127.0.0.1');
   });
 
-  it('should has services', function* () {
+  it('should has services', async () => {
     const ctx = app.mockContext();
-    const data = yield ctx.service.foo.get('foo');
+    const data = await ctx.service.foo.get('foo');
     assert(data === 'bar');
   });
 
-  it('should not override mockData', function* () {
-    const mockData = { user: 'popomore' };
+  it('should not override mockData', async () => {
+    const mockData: any = { user: 'popomore' };
     app.mockContext(mockData);
     app.mockContext(mockData);
     assert(!mockData.headers);
@@ -50,11 +48,11 @@ describe('test/ctx.test.js', () => {
 
   describe('mockContextScope', () => {
     it('should not conflict with nest call', async () => {
-      await app.mockContextScope(async ctx => {
+      await app.mockContextScope(async (ctx: any) => {
         const currentStore = app.ctxStorage.getStore();
         assert(ctx === currentStore);
 
-        await app.mockContextScope(async nestCtx => {
+        await app.mockContextScope(async (nestCtx: any) => {
           const currentStore = app.ctxStorage.getStore();
           assert(nestCtx === currentStore);
         });
@@ -63,18 +61,15 @@ describe('test/ctx.test.js', () => {
 
     it('should not conflict with concurrent call', async () => {
       await Promise.all([
-        await app.mockContextScope(async ctx => {
+        await app.mockContextScope(async (ctx: any) => {
           const currentStore = app.ctxStorage.getStore();
           assert(ctx === currentStore);
         }),
-        await app.mockContextScope(async ctx => {
+        await app.mockContextScope(async (ctx: any) => {
           const currentStore = app.ctxStorage.getStore();
           assert(ctx === currentStore);
         }),
       ]);
-
     });
   });
-
-
 });

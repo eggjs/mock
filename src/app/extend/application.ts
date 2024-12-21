@@ -1,26 +1,47 @@
-const debug = require('util').debuglog('egg-mock:application');
-const mm = require('mm');
-const http = require('http');
-const fs = require('fs');
-const merge = require('merge-descriptors');
-const is = require('is-type-of');
-const assert = require('assert');
-const Transport = require('egg-logger').Transport;
-const mockAgent = require('../../lib/mock_agent');
-const mockHttpclient = require('../../lib/mock_httpclient');
-const supertestRequest = require('../../lib/supertest');
+import { debuglog } from 'node:util';
+import http, { IncomingMessage } from 'node:http';
+import fs from 'node:fs';
+import assert from 'node:assert';
+import mergeDescriptors from 'merge-descriptors';
+import is from 'is-type-of';
+import { mock, restore } from 'mm';
+import { Transport } from 'egg-logger';
+import { EggCore, EggCoreOptions } from '@eggjs/core';
+import mockAgent from '../../lib/mock_agent';
+import mockHttpclient from '../../lib/mock_httpclient';
+import { request as supertestRequest, EggTestRequest } from '../../lib/supertest.js';
+import { MockOptions } from '../../lib/types.js';
+
+const debug = debuglog('egg-mock:application');
 
 const ORIGIN_TYPES = Symbol('egg-mock:originTypes');
 const BACKGROUND_TASKS = Symbol('Application#backgroundTasks');
 const REUSED_CTX = Symbol('Context#reusedInSuite');
 
-module.exports = {
+export interface MockContextOptions {
+  /**
+   * mock ctxStorage or not, default is `true`
+   */
+  mockCtxStorage?: boolean;
+  /**
+   * reuse ctxStorage or not, default is `true`
+   */
+  reuseCtxStorage?: boolean;
+}
+
+export interface MockContextData {
+  headers?: Record<string, string | string[]>;
+  [key: string]: any;
+}
+
+export default class ApplicationUnittest extends EggCore {
+  declare options: MockOptions & EggCoreOptions;
+
   /**
    * mock Context
    * @function App#mockContext
    * @param {Object} data - ctx data
    * @param {Object} [options] - mock ctx options
-   * @return {Context} ctx
    * @example
    * ```js
    * const ctx = app.mockContext({
@@ -36,11 +57,11 @@ module.exports = {
    * };
    * ```
    */
-  mockContext(data, options) {
-    function mockRequest(req) {
-      for (const key in (data.headers) || {}) {
-        mm(req.headers, key, data.headers[key]);
-        mm(req.headers, key.toLowerCase(), data.headers[key]);
+  mockContext(data: MockContextData, options?: MockContextOptions) {
+    function mockRequest(req: IncomingMessage) {
+      for (const key in data.headers) {
+        mock(req.headers, key, data.headers[key]);
+        mock(req.headers, key.toLowerCase(), data.headers[key]);
       }
     }
 
@@ -49,13 +70,13 @@ module.exports = {
     options = Object.assign({ mockCtxStorage }, options);
     data = data || {};
 
-    if (this._customMockContext) {
+    if ('_customMockContext' in this && typeof this._customMockContext === 'function') {
       this._customMockContext(data);
     }
 
     // 使用者自定义mock，可以覆盖上面的 mock
     for (const key in data) {
-      mm(this.context, key, data[key]);
+      mock(this.context, key, data[key]);
     }
 
     const req = this.mockRequest(data);
@@ -70,18 +91,18 @@ module.exports = {
     }
     const ctx = this.createContext(req, res);
     if (options.mockCtxStorage) {
-      mm(this.ctxStorage, 'getStore', () => ctx);
+      mock(this.ctxStorage, 'getStore', () => ctx);
     }
     return ctx;
-  },
+  }
 
-  async mockContextScope(fn, data) {
+  async mockContextScope(fn: () => Promise<any>, data: any) {
     const ctx = this.mockContext(data, {
       mockCtxStorage: false,
       reuseCtxStorage: false,
     });
     return await this.ctxStorage.run(ctx, fn, ctx);
-  },
+  }
 
   /**
    * mock cookie session
@@ -197,18 +218,18 @@ module.exports = {
    * @param {Request} req - mock request
    * @return {Request} req
    */
-  mockRequest(req) {
-    req = Object.assign({}, req);
-    const headers = req.headers || {};
+  mockRequest(req: MockContextData) {
+    req = { ...req };
+    const headers = req.headers ?? {};
     for (const key in req.headers) {
       headers[key.toLowerCase()] = req.headers[key];
     }
     if (!headers['x-forwarded-for']) {
       headers['x-forwarded-for'] = '127.0.0.1';
     }
-    headers['x-mock-request-from'] = 'egg-mock';
+    headers['x-mock-request-from'] = '@eggjs/mock';
     req.headers = headers;
-    merge(req, {
+    mergeDescriptors(req, {
       query: {},
       querystring: '',
       host: '127.0.0.1',
@@ -223,8 +244,8 @@ module.exports = {
         remotePort: 7001,
       },
     });
-    return req;
-  },
+    return req as IncomingMessage;
+  }
 
   /**
    * mock cookies
@@ -249,7 +270,7 @@ module.exports = {
       return ctx;
     });
     return this;
-  },
+  }
 
   /**
    * mock header
@@ -257,18 +278,18 @@ module.exports = {
    * @param {Object} headers - header 对象
    * @return {Context} this
    */
-  mockHeaders(headers) {
+  mockHeaders(headers: Record<string, string | string[]>) {
     if (!headers) {
       return this;
     }
     const getHeader = this.request.get;
-    mm(this.request, 'get', function(field) {
-      const header = findHeaders(headers, field);
-      if (header) return header;
+    mock(this.request, 'get', function(this: unknown, field: string) {
+      const value = findHeaders(headers, field);
+      if (value) return value;
       return getHeader.call(this, field);
     });
     return this;
-  },
+  }
 
   /**
    * mock csrf
@@ -277,10 +298,10 @@ module.exports = {
    * @since 1.11
    */
   mockCsrf() {
-    mm(this.context, 'assertCSRF', () => {});
-    mm(this.context, 'assertCsrf', () => {});
+    mock(this.context, 'assertCSRF', () => {});
+    mock(this.context, 'assertCsrf', () => {});
     return this;
-  },
+  }
 
   /**
    * mock httpclient
@@ -288,17 +309,17 @@ module.exports = {
    * @param {...any} args - args
    * @return {Context} this
    */
-  mockHttpclient(...args) {
+  mockHttpclient(...args: any[]) {
     if (!this._mockHttpclient) {
       this._mockHttpclient = mockHttpclient(this);
     }
     return this._mockHttpclient(...args);
-  },
+  }
 
-  mockUrllib(...args) {
+  mockUrllib(...args: any[]) {
     this.deprecate('[egg-mock] Please use app.mockHttpclient instead of app.mockUrllib');
     return this.mockHttpclient(...args);
-  },
+  }
 
   /**
    * get mock httpclient agent
@@ -307,41 +328,40 @@ module.exports = {
    */
   mockAgent() {
     return mockAgent.getAgent(this);
-  },
+  }
 
   async mockAgentRestore() {
     await mockAgent.restore();
-  },
+  }
 
   /**
    * @see mm#restore
    * @function App#mockRestore
    */
-  mockRestore: mm.restore,
+  mockRestore = restore;
 
   /**
    * @see mm
    * @function App#mm
    */
-  mm,
+  mm = mock;
 
   /**
    * override loadAgent
    * @function App#loadAgent
    */
-  loadAgent() {},
+  loadAgent() {}
 
   /**
    * mock serverEnv
    * @function App#mockEnv
-   * @param  {String} env - serverEnv
-   * @return {App} this
+   * @param {String} env - serverEnv
    */
-  mockEnv(env) {
-    mm(this.config, 'env', env);
-    mm(this.config, 'serverEnv', env);
+  mockEnv(env: string) {
+    mock(this.config, 'env', env);
+    mock(this.config, 'serverEnv', env);
     return this;
-  },
+  }
 
   /**
    * http request helper
@@ -349,9 +369,9 @@ module.exports = {
    * @return {SupertestRequest} req - supertest request
    * @see https://github.com/visionmedia/supertest
    */
-  httpRequest() {
+  httpRequest(): EggTestRequest {
     return supertestRequest(this);
-  },
+  }
 
   /**
    * collection logger message, then can be use on `expectLog()`

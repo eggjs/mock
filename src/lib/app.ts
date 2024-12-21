@@ -5,11 +5,11 @@ import { Base } from 'sdk-base';
 import { detectPort } from 'detect-port';
 import type { Agent, Application } from 'egg';
 import { importModule } from '@eggjs/utils';
-import { sleep, rimraf, getProperty } from './utils.js';
+import { sleep, rimraf, getProperty, getSourceDirname } from './utils.js';
 import { formatOptions } from './format_options.js';
-import context from './context.js';
-import mockCustomLoader from './mock_custom_loader.js';
-import mockHttpServer from './mock_http_server.js';
+import { context } from './context.js';
+import { setCustomLoader } from './mock_custom_loader.js';
+import { createServer } from './mock_http_server.js';
 import type { MockOptions, MockApplicationOptions } from './types.js';
 
 const debug = debuglog('egg-mock:lib:app');
@@ -75,7 +75,7 @@ export class MockApplication extends Base {
     debug('agent ready');
 
     const ApplicationClass = bindMessenger(egg.Application, agent);
-    const app = this._app = new ApplicationClass({ ...this.options }) as Application;
+    const app = this._app = new ApplicationClass({ ...this.options }) as unknown as Application;
 
     // https://github.com/eggjs/egg/blob/8bb7c7e7d59d6aeca4b2ed1eb580368dcb731a4d/lib/egg.js#L125
     // egg single mode mount this at start(), so egg-mock should impel it.
@@ -90,10 +90,10 @@ export class MockApplication extends Base {
     debug('this[APP_INIT] = true');
     this.#bindEvent();
     debug('http server instantiate');
-    mockHttpServer(app);
+    createServer(app);
     await app.ready();
     // work for config ready
-    mockCustomLoader(app);
+    setCustomLoader(app);
 
     const msg = {
       action: 'egg-ready',
@@ -169,8 +169,8 @@ export class MockApplication extends Base {
   }
 }
 
-export function createApp(options: MockOptions) {
-  options = formatOptions(options);
+export function createApp(createOptions: MockOptions) {
+  const options = formatOptions(createOptions);
   if (options.cache && apps.has(options.baseDir)) {
     const app = apps.get(options.baseDir);
     // return cache when it hasn't been killed
@@ -183,7 +183,7 @@ export function createApp(options: MockOptions) {
 
   let app = new MockApplication(options);
   app = new Proxy(app, {
-    get(target, prop) {
+    get(target: any, prop: string) {
       // don't delegate properties on MockApplication
       if (MOCK_APP_METHOD.includes(prop)) {
         return getProperty(target, prop);
@@ -194,14 +194,14 @@ export function createApp(options: MockOptions) {
       debug('proxy handler.get %s', prop);
       return target._app[prop];
     },
-    set(target, prop, value) {
+    set(target, prop: string, value) {
       if (MOCK_APP_METHOD.includes(prop)) return true;
       if (!target[APP_INIT]) throw new Error(`can't set ${prop} before ready`);
       debug('proxy handler.set %s', prop);
       target._app[prop] = value;
       return true;
     },
-    defineProperty(target, prop, descriptor) {
+    defineProperty(target, prop: string, descriptor) {
       // can't define properties on MockApplication
       if (MOCK_APP_METHOD.includes(prop)) return true;
       if (!target[APP_INIT]) throw new Error(`can't defineProperty ${prop} before ready`);
@@ -209,7 +209,7 @@ export function createApp(options: MockOptions) {
       Object.defineProperty(target._app, prop, descriptor);
       return true;
     },
-    deleteProperty(target, prop) {
+    deleteProperty(target, prop: string) {
       // can't delete properties on MockApplication
       if (MOCK_APP_METHOD.includes(prop)) return true;
       if (!target[APP_INIT]) throw new Error(`can't delete ${prop} before ready`);
@@ -217,14 +217,20 @@ export function createApp(options: MockOptions) {
       delete target._app[prop];
       return true;
     },
-    getOwnPropertyDescriptor(target, prop) {
-      if (MOCK_APP_METHOD.includes(prop)) return Object.getOwnPropertyDescriptor(target, prop);
-      if (!target[APP_INIT]) throw new Error(`can't getOwnPropertyDescriptor ${prop} before ready`);
+    getOwnPropertyDescriptor(target, prop: string) {
+      if (MOCK_APP_METHOD.includes(prop)) {
+        return Object.getOwnPropertyDescriptor(target, prop);
+      }
+      if (!target[APP_INIT]) {
+        throw new Error(`can't getOwnPropertyDescriptor ${prop} before ready`);
+      }
       debug('proxy handler.getOwnPropertyDescriptor %s', prop);
       return Object.getOwnPropertyDescriptor(target._app, prop);
     },
     getPrototypeOf(target) {
-      if (!target[APP_INIT]) throw new Error('can\'t getPrototypeOf before ready');
+      if (!target[APP_INIT]) {
+        throw new Error('can\'t getPrototypeOf before ready');
+      }
       debug('proxy handler.getPrototypeOf %s');
       return Object.getPrototypeOf(target._app);
     },
@@ -234,20 +240,23 @@ export function createApp(options: MockOptions) {
   return app;
 }
 
-function bindMessenger(Application, agent) {
+function bindMessenger(Application: any, agent: Agent) {
   const agentMessenger = agent.messenger;
   return class MessengerApplication extends Application {
-    constructor(options) {
+    [MESSENGER]: any;
+
+    constructor(options: any) {
       super(options);
 
       // enable app to send to a random agent
-      this.messenger.sendRandom = (action, data) => {
+      this.messenger.sendRandom = (action: string, data: unknown) => {
         this.messenger.sendToAgent(action, data);
       };
       // enable agent to send to a random app
       agentMessenger.on('egg-ready', () => {
-        agentMessenger.sendRandom = (action, data) => {
+        agentMessenger.sendRandom = (action: string, data: unknown) => {
           agentMessenger.sendToApp(action, data);
+          return agentMessenger;
         };
       });
 
@@ -255,10 +264,9 @@ function bindMessenger(Application, agent) {
         apply: this._sendMessage.bind(this),
       });
     }
-    _sendMessage(target, thisArg, [ action, data, to ]) {
+    _sendMessage(_target: any, _thisArg: unknown, [ action, data, to ]: [ string, unknown | undefined, string]) {
       const appMessenger = this.messenger;
       setImmediate(() => {
-
         if (to === 'app') {
           appMessenger.onMessage({ action, data });
         } else {
@@ -277,7 +285,7 @@ function bindMessenger(Application, agent) {
     }
 
     get [Symbol.for('egg#eggPath')]() {
-      return path.join(__dirname, 'tmp');
+      return path.join(getSourceDirname(), 'lib/tmp');
     }
   };
 }

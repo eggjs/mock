@@ -29,8 +29,9 @@
     "node": ">= 18.19.0"
   },
   "dependencies": {
+    "@eggjs/core": "^6.2.4",
+    "@eggjs/supertest": "^8.1.0",
     "@eggjs/utils": "^4.0.3",
-    "@types/supertest": "^2.0.7",
     "coffee": "^5.2.1",
     "detect-port": "^2.1.0",
     "egg-logger": "^3.5.0",
@@ -38,11 +39,10 @@
     "get-ready": "^3.4.0",
     "globby": "^11.1.0",
     "is-type-of": "^2.2.0",
-    "merge-descriptors": "^1.0.1",
+    "merge-descriptors": "^2.0.0",
     "methods": "^1.1.2",
     "mm": "^4.0.0",
     "sdk-base": "^5.0.0",
-    "supertest": "^6.2.4",
     "utility": "^2.3.0"
   },
   "peerDependencies": {
@@ -51,24 +51,25 @@
     "urllib": "^4"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.17.1",
     "@eggjs/tegg": "^3.2.2",
     "@eggjs/tegg-config": "^3.2.2",
     "@eggjs/tegg-controller-plugin": "^3.2.2",
     "@eggjs/tegg-plugin": "^3.2.2",
-    "@arethetypeswrong/cli": "^0.17.1",
     "@eggjs/tsconfig": "1",
-    "@types/node": "22",
+    "@types/methods": "^1.1.4",
     "@types/mocha": "10",
-    "mocha": "10",
-    "eslint": "8",
-    "eslint-config-egg": "14",
-    "tshy": "3",
-    "tshy-after": "1",
-    "typescript": "5",
+    "@types/node": "22",
     "egg": "beta",
     "egg-bin": "beta",
     "egg-errors": "^2.2.1",
     "egg-tracer": "^2.0.0",
+    "eslint": "8",
+    "eslint-config-egg": "14",
+    "mocha": "10",
+    "tshy": "3",
+    "tshy-after": "1",
+    "typescript": "5",
     "urllib": "4"
   },
   "scripts": {

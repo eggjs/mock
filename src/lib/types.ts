@@ -50,5 +50,5 @@ export interface MockOptions {
 export interface MockApplicationOptions extends MockOptions {
   baseDir: string;
   framework: string;
-  clusterPort: number;
+  clusterPort?: number;
 }

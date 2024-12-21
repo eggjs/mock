@@ -1,4 +1,4 @@
-module.exports = app => {
+export function setCustomLoader(app: any) {
   const customLoader = app.config.customLoader;
   if (!customLoader) return;
 
@@ -8,14 +8,14 @@ module.exports = app => {
     addMethod(loaderConfig);
   }
 
-  function addMethod(loaderConfig) {
-    const field = loaderConfig.field;
+  function addMethod(loaderConfig: any) {
+    const field = loaderConfig.field as string;
     const appMethodName = 'mock' + field.replace(/^[a-z]/i, s => s.toUpperCase());
     if (app[appMethodName]) {
       app.coreLogger.warn('Can\'t override app.%s', appMethodName);
       return;
     }
-    app[appMethodName] = function(service, methodName, fn) {
+    app[appMethodName] = function(service: any, methodName: string, fn: any) {
       if (typeof service === 'string') {
         const arr = service.split('.');
         service = loaderConfig.inject === 'ctx' ? this[field + 'Classes'] : this[field];
@@ -28,4 +28,4 @@ module.exports = app => {
       return this;
     };
   }
-};
+}
