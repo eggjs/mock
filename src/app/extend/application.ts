@@ -3,18 +3,22 @@ import http, { IncomingMessage } from 'node:http';
 import fs from 'node:fs';
 import assert from 'node:assert';
 import mergeDescriptors from 'merge-descriptors';
-import is from 'is-type-of';
+import { isAsyncFunction, isObject } from 'is-type-of';
 import { mock, restore } from 'mm';
-import { Transport } from 'egg-logger';
+import { Transport, Logger, LoggerLevel, LoggerMeta } from 'egg-logger';
 import { EggCore, EggCoreOptions } from '@eggjs/core';
-import mockAgent from '../../lib/mock_agent';
-import mockHttpclient from '../../lib/mock_httpclient';
+import { getMockAgent, restoreMockAgent } from '../../lib/mock_agent.js';
+import {
+  createMockHttpClient, MockResultFunction,
+  MockResultOptions,
+  MockHttpClientMethod,
+} from '../../lib/mock_httpclient.js';
 import { request as supertestRequest, EggTestRequest } from '../../lib/supertest.js';
 import { MockOptions } from '../../lib/types.js';
 
-const debug = debuglog('egg-mock:application');
+const debug = debuglog('@eggjs/mock/app/extend/application');
 
-const ORIGIN_TYPES = Symbol('egg-mock:originTypes');
+const ORIGIN_TYPES = Symbol('@eggjs/mock originTypes');
 const BACKGROUND_TASKS = Symbol('Application#backgroundTasks');
 const REUSED_CTX = Symbol('Context#reusedInSuite');
 
@@ -34,8 +38,11 @@ export interface MockContextData {
   [key: string]: any;
 }
 
-export default class ApplicationUnittest extends EggCore {
+export default abstract class ApplicationUnittest extends EggCore {
   declare options: MockOptions & EggCoreOptions;
+  _mockHttpClient: MockHttpClientMethod;
+  declare logger: Logger;
+  abstract getLogger(name: string): Logger;
 
   /**
    * mock Context
@@ -101,88 +108,86 @@ export default class ApplicationUnittest extends EggCore {
       mockCtxStorage: false,
       reuseCtxStorage: false,
     });
-    return await this.ctxStorage.run(ctx, fn, ctx);
+    return await this.ctxStorage.run(ctx, fn);
   }
 
   /**
    * mock cookie session
    * @function App#mockSession
    * @param {Object} data - session object
-   * @return {App} this
    */
-  mockSession(data) {
+  mockSession(data: any) {
     if (!data) {
       return this;
     }
 
-    if (is.object(data) && !data.save) {
+    if (isObject(data) && !('save' in data)) {
+      // keep session.save() work
       Object.defineProperty(data, 'save', {
         value: () => {},
         enumerable: false,
       });
     }
-    mm(this.context, 'session', data);
+    mock(this.context, 'session', data);
     return this;
-  },
+  }
 
   /**
    * Mock service
    * @function App#mockService
    * @param {String} service - name
    * @param {String} methodName - method
-   * @param {Object/Function/Error} fn - mock you data
-   * @return {App} this
+   * @param {Object|Function|Error} fn - mock you data
    */
-  mockService(service, methodName, fn) {
+  mockService(service: string | any, methodName: string, fn: any) {
     if (typeof service === 'string') {
-      const arr = service.split('.');
+      const splits = service.split('.');
       service = this.serviceClasses;
-      for (const key of arr) {
+      for (const key of splits) {
         service = service[key];
       }
       service = service.prototype || service;
     }
     this._mockFn(service, methodName, fn);
     return this;
-  },
+  }
 
   /**
    * mock service that return error
    * @function App#mockServiceError
    * @param {String} service - name
    * @param {String} methodName - method
-   * @param {Error} [err] - error infomation
-   * @return {App} this
+   * @param {Error} [err] - error information
    */
-  mockServiceError(service, methodName, err) {
+  mockServiceError(service: string | any, methodName: string, err?: string | Error) {
     if (typeof err === 'string') {
       err = new Error(err);
-    } else if (!err) {
+    }
+    if (!err) {
       // mockServiceError(service, methodName)
-      err = new Error('mock ' + methodName + ' error');
+      err = new Error(`mock ${methodName} error`);
     }
     this.mockService(service, methodName, err);
     return this;
-  },
+  }
 
-  _mockFn(obj, name, data) {
+  _mockFn(obj: any, name: string, data: any) {
     const origin = obj[name];
-    assert(is.function(origin), `property ${name} in original object must be function`);
+    assert(typeof origin === 'function', `property ${name} in original object must be function`);
 
-    // keep origin properties' type to support mock multitimes
+    // keep origin properties' type to support mock multi times
     if (!obj[ORIGIN_TYPES]) obj[ORIGIN_TYPES] = {};
     let type = obj[ORIGIN_TYPES][name];
     if (!type) {
-      type = obj[ORIGIN_TYPES][name] = is.generatorFunction(origin) || is.asyncFunction(origin) ? 'async' : 'sync';
+      type = obj[ORIGIN_TYPES][name] = isAsyncFunction(origin) ? 'async' : 'sync';
     }
 
-    if (is.function(data)) {
+    if (typeof data === 'function') {
       const fn = data;
-      // if original is generator function or async function
+      // if original is async function
       // but the mock function is normal function, need to change it return a promise
-      if (type === 'async' &&
-      (!is.generatorFunction(fn) && !is.asyncFunction(fn))) {
-        mm(obj, name, function(...args) {
+      if (type === 'async' && !isAsyncFunction(fn)) {
+        mock(obj, name, function(this: any, ...args: any[]) {
           return new Promise(resolve => {
             resolve(fn.apply(this, args));
           });
@@ -190,12 +195,12 @@ export default class ApplicationUnittest extends EggCore {
         return;
       }
 
-      mm(obj, name, fn);
+      mock(obj, name, fn);
       return;
     }
 
     if (type === 'async') {
-      mm(obj, name, () => {
+      mock(obj, name, () => {
         return new Promise((resolve, reject) => {
           if (data instanceof Error) return reject(data);
           resolve(data);
@@ -204,19 +209,18 @@ export default class ApplicationUnittest extends EggCore {
       return;
     }
 
-    mm(obj, name, () => {
+    mock(obj, name, () => {
       if (data instanceof Error) {
         throw data;
       }
       return data;
     });
-  },
+  }
 
   /**
    * mock request
    * @function App#mockRequest
    * @param {Request} req - mock request
-   * @return {Request} req
    */
   mockRequest(req: MockContextData) {
     req = { ...req };
@@ -250,18 +254,16 @@ export default class ApplicationUnittest extends EggCore {
   /**
    * mock cookies
    * @function App#mockCookies
-   * @param {Object} cookies - cookie
-   * @return {Context} this
    */
-  mockCookies(cookies) {
+  mockCookies(cookies: Record<string, string | string[]>) {
     if (!cookies) {
       return this;
     }
     const createContext = this.createContext;
-    mm(this, 'createContext', function(req, res) {
+    mock(this, 'createContext', function(this: any, req: any, res: any) {
       const ctx = createContext.call(this, req, res);
       const getCookie = ctx.cookies.get;
-      mm(ctx.cookies, 'get', function(key, opts) {
+      mock(ctx.cookies, 'get', function(this: any, key: string, opts: any) {
         if (cookies[key]) {
           return cookies[key];
         }
@@ -275,8 +277,6 @@ export default class ApplicationUnittest extends EggCore {
   /**
    * mock header
    * @function App#mockHeaders
-   * @param {Object} headers - header 对象
-   * @return {Context} this
    */
   mockHeaders(headers: Record<string, string | string[]>) {
     if (!headers) {
@@ -294,7 +294,6 @@ export default class ApplicationUnittest extends EggCore {
   /**
    * mock csrf
    * @function App#mockCsrf
-   * @return {App} this
    * @since 1.11
    */
   mockCsrf() {
@@ -305,33 +304,42 @@ export default class ApplicationUnittest extends EggCore {
 
   /**
    * mock httpclient
+   * @alias mockHttpClient
    * @function App#mockHttpclient
-   * @param {...any} args - args
-   * @return {Context} this
    */
-  mockHttpclient(...args: any[]) {
-    if (!this._mockHttpclient) {
-      this._mockHttpclient = mockHttpclient(this);
-    }
-    return this._mockHttpclient(...args);
+  mockHttpclient(mockUrl: string | RegExp, mockMethod: string | string[] | MockResultOptions | MockResultFunction, mockResult?: MockResultOptions | MockResultFunction | string) {
+    return this.mockHttpClient(mockUrl, mockMethod, mockResult);
   }
 
-  mockUrllib(...args: any[]) {
-    this.deprecate('[egg-mock] Please use app.mockHttpclient instead of app.mockUrllib');
-    return this.mockHttpclient(...args);
+  /**
+   * mock httpclient
+   * @function App#mockHttpClient
+   */
+  mockHttpClient(mockUrl: string | RegExp, mockMethod: string | string[] | MockResultOptions | MockResultFunction, mockResult?: MockResultOptions | MockResultFunction | string) {
+    if (!this._mockHttpClient) {
+      this._mockHttpClient = createMockHttpClient(this);
+    }
+    return this._mockHttpClient(mockUrl, mockMethod, mockResult);
+  }
+
+  /**
+   * @deprecated Please use app.mockHttpClient instead of app.mockUrllib
+   */
+  mockUrllib(mockUrl: string | RegExp, mockMethod: string | string[] | MockResultOptions | MockResultFunction, mockResult?: MockResultOptions | MockResultFunction | string) {
+    this.deprecate('[@eggjs/mock] Please use app.mockHttpClient instead of app.mockUrllib');
+    return this.mockHttpClient(mockUrl, mockMethod, mockResult);
   }
 
   /**
    * get mock httpclient agent
    * @function App#mockHttpclientAgent
-   * @return {MockAgent} agent
    */
   mockAgent() {
-    return mockAgent.getAgent(this);
+    return getMockAgent(this as any);
   }
 
   async mockAgentRestore() {
-    await mockAgent.restore();
+    await restoreMockAgent();
   }
 
   /**
@@ -375,37 +383,38 @@ export default class ApplicationUnittest extends EggCore {
 
   /**
    * collection logger message, then can be use on `expectLog()`
-   * @param {String|Logger} [logger] - logger instance, default is `ctx.logger`
+   * @param {String|Logger} [logger] - logger instance, default is `app.logger`
    * @function App#mockLog
    */
-  mockLog(logger) {
-    logger = logger || this.logger;
+  mockLog(logger?: string | Logger) {
+    logger = logger ?? this.logger;
     if (typeof logger === 'string') {
       logger = this.getLogger(logger);
     }
     // make sure mock once
-    if (logger._mockLogs) return;
+    if ('_mockLogs' in logger && logger._mockLogs) return;
 
     const transport = new Transport(logger.options);
     // https://github.com/eggjs/egg-logger/blob/master/lib/logger.js#L64
     const log = logger.log;
-    mm(logger, '_mockLogs', []);
-    mm(logger, 'log', (level, args, meta) => {
+    const mockLogs: string[] = [];
+    mock(logger, '_mockLogs', mockLogs);
+    mock(logger, 'log', (level: LoggerLevel, args: any[], meta: LoggerMeta) => {
       const message = transport.log(level, args, meta);
-      logger._mockLogs.push(message);
+      mockLogs.push(message);
       log.apply(logger, [ level, args, meta ]);
     });
-  },
+  }
 
-  __checkExpectLog(expectOrNot, str, logger) {
+  __checkExpectLog(expectOrNot: boolean, str: string | RegExp, logger: string | Logger) {
     logger = logger || this.logger;
     if (typeof logger === 'string') {
       logger = this.getLogger(logger);
     }
     const filepath = logger.options.file;
     let content;
-    if (logger._mockLogs) {
-      content = logger._mockLogs.join('\n');
+    if ('_mockLogs' in logger && logger._mockLogs) {
+      content = (logger._mockLogs as string[]).join('\n');
     } else {
       content = fs.readFileSync(filepath, 'utf8');
     }
@@ -419,11 +428,13 @@ export default class ApplicationUnittest extends EggCore {
       type = 'String';
     }
     if (expectOrNot) {
-      assert(match, `Can't find ${type}:"${str}" in ${filepath}, log content: ...${content.substring(content.length - 500)}`);
+      assert(match,
+        `Can't find ${type}:"${str}" in ${filepath}, log content: ...${content.substring(content.length - 500)}`);
     } else {
-      assert(!match, `Find ${type}:"${str}" in ${filepath}, log content: ...${content.substring(content.length - 500)}`);
+      assert(!match,
+        `Find ${type}:"${str}" in ${filepath}, log content: ...${content.substring(content.length - 500)}`);
     }
-  },
+  }
 
   /**
    * expect str/regexp in the logger, if your server disk is slow, please call `mockLog()` first.
@@ -431,9 +442,9 @@ export default class ApplicationUnittest extends EggCore {
    * @param {String|Logger} [logger] - logger instance, default is `ctx.logger`
    * @function App#expectLog
    */
-  expectLog(str, logger) {
+  expectLog(str: string | RegExp, logger: string | Logger) {
     this.__checkExpectLog(true, str, logger);
-  },
+  }
 
   /**
    * not expect str/regexp in the logger, if your server disk is slow, please call `mockLog()` first.
@@ -441,39 +452,37 @@ export default class ApplicationUnittest extends EggCore {
    * @param {String|Logger} [logger] - logger instance, default is `ctx.logger`
    * @function App#notExpectLog
    */
-  notExpectLog(str, logger) {
+  notExpectLog(str: string | RegExp, logger: string | Logger) {
     this.__checkExpectLog(false, str, logger);
-  },
+  }
 
-  backgroundTasksFinished() {
+  async backgroundTasksFinished() {
     const tasks = this._backgroundTasks;
     debug('waiting %d background tasks', tasks.length);
-    if (tasks.length === 0) return Promise.resolve();
+    if (tasks.length === 0) return;
 
     this._backgroundTasks = [];
-    return Promise.all(tasks).then(() => {
-      debug('finished %d background tasks', tasks.length);
-      if (this._backgroundTasks.length) {
-        debug('new background tasks created: %s', this._backgroundTasks.length);
-        return this.backgroundTasksFinished();
-      }
-    });
-  },
+    await Promise.all(tasks);
+    debug('finished %d background tasks', tasks.length);
+    if (this._backgroundTasks.length) {
+      debug('new background tasks created: %s', this._backgroundTasks.length);
+      await this.backgroundTasksFinished();
+    }
+  }
 
   get _backgroundTasks() {
     if (!this[BACKGROUND_TASKS]) {
       this[BACKGROUND_TASKS] = [];
     }
-    return this[BACKGROUND_TASKS];
-  },
+    return this[BACKGROUND_TASKS] as Promise<any>[];
+  }
 
   set _backgroundTasks(tasks) {
     this[BACKGROUND_TASKS] = tasks;
-  },
+  }
+}
 
-};
-
-function findHeaders(headers, key) {
+function findHeaders(headers: Record<string, any>, key: string) {
   if (!headers || !key) {
     return null;
   }
