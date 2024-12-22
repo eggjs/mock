@@ -6,7 +6,7 @@ import mergeDescriptors from 'merge-descriptors';
 import { isAsyncFunction, isObject } from 'is-type-of';
 import { mock, restore } from 'mm';
 import { Transport, Logger, LoggerLevel, LoggerMeta } from 'egg-logger';
-import { EggCore, EggCoreOptions } from '@eggjs/core';
+import { EggCore, EggCoreOptions, ContextDelegation } from '@eggjs/core';
 import { getMockAgent, restoreMockAgent } from '../../lib/mock_agent.js';
 import {
   createMockHttpClient, MockResultFunction,
@@ -38,6 +38,10 @@ export interface MockContextData {
   [key: string]: any;
 }
 
+export interface MockContextDelegation extends ContextDelegation {
+  service: any;
+}
+
 export default abstract class ApplicationUnittest extends EggCore {
   declare options: MockOptions & EggCoreOptions;
   _mockHttpClient: MockHttpClientMethod;
@@ -64,7 +68,7 @@ export default abstract class ApplicationUnittest extends EggCore {
    * };
    * ```
    */
-  mockContext(data?: MockContextData, options?: MockContextOptions) {
+  mockContext(data?: MockContextData, options?: MockContextOptions): MockContextDelegation {
     data = data ?? {};
     function mockRequest(req: IncomingMessage) {
       for (const key in data?.headers) {
@@ -93,22 +97,24 @@ export default abstract class ApplicationUnittest extends EggCore {
       if (this.currentContext && !this.currentContext[REUSED_CTX]) {
         mockRequest(this.currentContext.request.req);
         this.currentContext[REUSED_CTX] = true;
-        return this.currentContext;
+        return this.currentContext as MockContextDelegation;
       }
     }
     const ctx = this.createContext(req, res);
     if (options.mockCtxStorage) {
       mock(this.ctxStorage, 'getStore', () => ctx);
     }
-    return ctx;
+    return ctx as MockContextDelegation;
   }
 
-  async mockContextScope(fn: () => Promise<any>, data: any) {
+  async mockContextScope(fn: (ctx?: MockContextDelegation) => Promise<any>, data?: MockContextData) {
     const ctx = this.mockContext(data, {
       mockCtxStorage: false,
       reuseCtxStorage: false,
     });
-    return await this.ctxStorage.run(ctx, fn);
+    return await this.ctxStorage.run(ctx, async () => {
+      return await fn(ctx);
+    });
   }
 
   /**

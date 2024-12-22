@@ -29,13 +29,13 @@ describe('test/ctx.test.ts', () => {
   it('should ctx.ip work', () => {
     const ctx = app.mockContext();
     ctx.request.headers['x-forwarded-for'] = '';
-    assert(ctx.request.ip === '127.0.0.1');
+    assert.equal(ctx.request.ip, '127.0.0.1');
   });
 
   it('should has services', async () => {
     const ctx = app.mockContext();
     const data = await ctx.service.foo.get('foo');
-    assert(data === 'bar');
+    assert.equal(data, 'bar');
   });
 
   it('should not override mockData', async () => {
@@ -55,6 +55,15 @@ describe('test/ctx.test.ts', () => {
         await app.mockContextScope(async (nestCtx: any) => {
           const currentStore = app.ctxStorage.getStore();
           assert(nestCtx === currentStore);
+        });
+      });
+
+      await app.mockContextScope(async () => {
+        const ctx = app.ctxStorage.getStore();
+        await app.mockContextScope(async (newCtx: any) => {
+          const currentStore = app.ctxStorage.getStore();
+          assert.equal(newCtx, currentStore);
+          assert.notEqual(ctx, currentStore);
         });
       });
     });

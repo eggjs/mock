@@ -1,3 +1,7 @@
+import { debuglog } from 'node:util';
+
+const debug = debuglog('@eggjs/mock/lib/mock_custom_loader');
+
 export function setCustomLoader(app: any) {
   const customLoader = app.config.customLoader;
   if (!customLoader) return;
@@ -15,6 +19,7 @@ export function setCustomLoader(app: any) {
       app.coreLogger.warn('Can\'t override app.%s', appMethodName);
       return;
     }
+    debug('[addMethod] %s => %j', appMethodName, loaderConfig);
     app[appMethodName] = function(service: any, methodName: string, fn: any) {
       if (typeof service === 'string') {
         const arr = service.split('.');

@@ -56,10 +56,21 @@ export class MockApplication extends Base {
     if (this.options.clean !== false) {
       const logDir = path.join(this.options.baseDir, 'logs');
       try {
-        if (os.platform() === 'win32') await sleep(1000);
+        if (os.platform() === 'win32') {
+          await sleep(1000);
+        }
         await rimraf(logDir);
       } catch (err: any) {
         console.error(`remove log dir ${logDir} failed: ${err.stack}`);
+      }
+      const runDir = path.join(this.options.baseDir, 'run');
+      try {
+        if (os.platform() === 'win32') {
+          await sleep(1000);
+        }
+        await rimraf(runDir);
+      } catch (err: any) {
+        console.error(`remove run dir ${runDir} failed: ${err.stack}`);
       }
     }
 
