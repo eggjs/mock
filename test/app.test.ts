@@ -175,7 +175,7 @@ function call(method: string) {
         });
     });
 
-    it.only('should app.expectLog(), app.notExpectLog() work', async () => {
+    it('should app.expectLog(), app.notExpectLog() work', async () => {
       await app.httpRequest()
         .get('/logger')
         .expect(200)

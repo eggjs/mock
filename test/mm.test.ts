@@ -1,19 +1,16 @@
-'use strict';
+import { strict as assert } from 'node:assert';
+import path from 'node:path';
+import fs from 'node:fs';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
 
-const path = require('path');
-const fs = require('fs');
-const assert = require('assert');
-const mm = require('..');
+const baseDir = getFixtures('apps/env-app');
 
-const baseDir = path.join(__dirname, 'fixtures/apps/env-app');
-
-describe('test/mm.test.js', () => {
-
+describe('test/mm.test.ts', () => {
   afterEach(mm.restore);
 
   describe('mm.env()', () => {
-
-    let app;
+    let app: MockApplication;
     beforeEach(() => {
       mm(process.env, 'EGG_HOME', baseDir);
     });
@@ -68,31 +65,31 @@ describe('test/mm.test.js', () => {
   });
 
   describe('mm.app({ clean: false })', () => {
-    let app;
+    let app: MockApplication;
     after(() => app.close());
 
     it('keep log dir', async () => {
       app = mm.app({ baseDir: 'apps/app-not-clean', clean: false });
       await app.ready();
-      assert(fs.existsSync(path.join(__dirname, 'fixtures/apps/app-not-clean/logs/keep')));
+      assert(fs.existsSync(getFixtures('apps/app-not-clean/logs/keep')));
     });
   });
 
   describe('mm.consoleLevel()', () => {
-    it('shoud mock EGG_LOG', () => {
+    it('should mock EGG_LOG', () => {
       mm.consoleLevel('none');
       assert(process.env.EGG_LOG === 'NONE');
     });
 
-    it('shoud not mock', () => {
+    it('should not mock', () => {
       mm.consoleLevel('');
       assert(!process.env.EGG_LOG);
     });
   });
 
   describe('mm.home', () => {
-    let app;
-    const baseDir = path.join(__dirname, 'fixtures/apps/mockhome');
+    let app: MockApplication;
+    const baseDir = getFixtures('apps/mockhome');
     before(() => {
       mm.home(baseDir);
       app = mm.app({ baseDir: 'apps/mockhome', clean: false });
@@ -111,7 +108,7 @@ describe('test/mm.test.js', () => {
   });
 
   describe('egg-mock', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.app({
         baseDir: 'apps/no-framework',
@@ -121,7 +118,7 @@ describe('test/mm.test.js', () => {
     after(() => app.close());
 
     it('should not be a framework', () => {
-      app.mockEnv();
+      app.mockEnv('prod test not work');
       assert(app.config.env === 'mocked by plugin');
     });
   });

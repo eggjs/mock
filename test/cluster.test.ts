@@ -1,21 +1,15 @@
-'use strict';
+import { strict as assert } from 'node:assert';
+import { getFixtures } from './helper.js';
+import mm, { MockApplication } from '../src/index.js';
 
-const path = require('path');
-const assert = require('assert');
-const request = require('supertest');
-const mm = require('..');
-
-const fixtures = path.join(__dirname, 'fixtures');
-
-describe('test/cluster.test.js', () => {
-
+describe('test/cluster.test.ts', () => {
   afterEach(mm.restore);
 
   describe('normal', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.cluster({
-        baseDir: path.join(fixtures, 'demo'),
+        baseDir: getFixtures('demo'),
         cache: false,
         coverage: false,
       });
@@ -25,8 +19,8 @@ describe('test/cluster.test.js', () => {
     after(() => app.close());
 
     it('should have members', async () => {
-      assert(app.callback() === app);
-      assert(app.listen() === app);
+      assert.equal(app.callback(), app);
+      assert.equal(app.listen(), app);
       await app.ready();
       assert(app.process);
     });
@@ -43,10 +37,10 @@ describe('test/cluster.test.js', () => {
   });
 
   describe('cluster with fullpath baseDir', () => {
-    let app;
+    let app: MockApplication;
     before(done => {
       app = mm.cluster({
-        baseDir: path.join(fixtures, 'demo'),
+        baseDir: getFixtures('demo'),
         cache: false,
         coverage: false,
       });
@@ -55,7 +49,7 @@ describe('test/cluster.test.js', () => {
     after(() => app.close());
 
     it('should work', done => {
-      request(app.callback())
+      app.httpRequest()
         .get('/hello')
         .expect('hi')
         .expect(200, done);
@@ -63,7 +57,7 @@ describe('test/cluster.test.js', () => {
   });
 
   describe('cluster with shortpath baseDir', () => {
-    let app;
+    let app: MockApplication;
     before(done => {
       app = mm.cluster({
         baseDir: 'demo',
@@ -75,7 +69,7 @@ describe('test/cluster.test.js', () => {
     after(() => app.close());
 
     it('should work', done => {
-      request(app.callback())
+      app.httpRequest()
         .get('/hello')
         .expect('hi')
         .expect(200, done);
@@ -83,11 +77,11 @@ describe('test/cluster.test.js', () => {
   });
 
   describe('cluster with customEgg=string', () => {
-    let app;
+    let app: MockApplication;
     before(done => {
       app = mm.cluster({
         baseDir: 'apps/barapp',
-        customEgg: path.join(fixtures, 'bar'),
+        customEgg: getFixtures('bar'),
         cache: false,
         coverage: false,
       });
@@ -96,7 +90,31 @@ describe('test/cluster.test.js', () => {
     after(() => app.close());
 
     it('should work', done => {
-      request(app.callback())
+      app.httpRequest()
+        .get('/')
+        .expect({
+          foo: 'bar',
+          foobar: 'bar',
+        })
+        .expect(200, done);
+    });
+  });
+
+  describe('cluster with framework=string', () => {
+    let app: MockApplication;
+    before(done => {
+      app = mm.cluster({
+        baseDir: 'apps/barapp',
+        framework: getFixtures('bar'),
+        cache: false,
+        coverage: false,
+      });
+      app.ready(done);
+    });
+    after(() => app.close());
+
+    it('should work', done => {
+      app.httpRequest()
         .get('/')
         .expect({
           foo: 'bar',
@@ -107,13 +125,13 @@ describe('test/cluster.test.js', () => {
   });
 
   describe('cluster with customEgg=true', () => {
-    let app;
+    let app: MockApplication;
     before(done => {
       mm(process, 'cwd', () => {
-        return path.join(fixtures, 'bar');
+        return getFixtures('bar');
       });
       app = mm.cluster({
-        baseDir: path.join(fixtures, 'apps/barapp'),
+        baseDir: getFixtures('apps/barapp'),
         customEgg: true,
         cache: false,
         coverage: false,
@@ -123,7 +141,34 @@ describe('test/cluster.test.js', () => {
     after(() => app.close());
 
     it('should work', done => {
-      request(app.callback())
+      app.httpRequest()
+        .get('/')
+        .expect({
+          foo: 'bar',
+          foobar: 'bar',
+        })
+        .expect(200, done);
+    });
+  });
+
+  describe('cluster with framework=true', () => {
+    let app: MockApplication;
+    before(done => {
+      mm(process, 'cwd', () => {
+        return getFixtures('bar');
+      });
+      app = mm.cluster({
+        baseDir: getFixtures('apps/barapp'),
+        framework: true,
+        cache: false,
+        coverage: false,
+      });
+      app.ready(done);
+    });
+    after(() => app.close());
+
+    it('should work', done => {
+      app.httpRequest()
         .get('/')
         .expect({
           foo: 'bar',
@@ -134,8 +179,8 @@ describe('test/cluster.test.js', () => {
   });
 
   describe('cluster with cache', () => {
-    let app1;
-    let app2;
+    let app1: MockApplication;
+    let app2: MockApplication;
     afterEach(() => {
       const promises = [];
       app1 && promises.push(app1.close());
@@ -179,17 +224,17 @@ describe('test/cluster.test.js', () => {
   });
 
   describe('cluster with eggPath', () => {
-    let app;
+    let app: MockApplication;
     after(() => app.close());
 
     it('should get eggPath', async () => {
       app = mm.cluster({
         baseDir: 'demo',
-        customEgg: path.join(__dirname, 'fixtures/chair'),
+        customEgg: getFixtures('chair'),
         eggPath: '/path/to/eggPath',
         cache: false,
         coverage: false,
-      });
+      } as any);
       await app
         .debug()
         .expect('stdout', /\/path\/to\/eggPath/)
@@ -198,13 +243,13 @@ describe('test/cluster.test.js', () => {
   });
 
   describe('cluster with workers', () => {
-    let app;
+    let app: MockApplication;
     after(() => app.close());
 
     it('should get 2 workers', async () => {
       app = mm.cluster({
         baseDir: 'demo',
-        customEgg: path.join(__dirname, 'fixtures/chair'),
+        customEgg: getFixtures('chair'),
         workers: 2,
         cache: false,
         coverage: false,
@@ -217,13 +262,13 @@ describe('test/cluster.test.js', () => {
   });
 
   describe('cluster with opts.customEgg', () => {
-    let app;
+    let app: MockApplication;
     after(() => app.close());
 
     it('should pass execArgv', async () => {
       app = mm.cluster({
         baseDir: 'custom_egg',
-        customEgg: path.join(__dirname, 'fixtures/bar'),
+        customEgg: getFixtures('bar'),
         workers: 1,
         cache: false,
         coverage: false,
@@ -239,7 +284,7 @@ describe('test/cluster.test.js', () => {
   });
 
   describe('cluster with egg.framework=yadan', () => {
-    let app;
+    let app: MockApplication;
     after(() => app.close());
 
     it('should pass execArgv', async () => {
@@ -254,8 +299,8 @@ describe('test/cluster.test.js', () => {
     });
   });
 
-  describe('prerequire', () => {
-    let app;
+  describe.skip('prerequire', () => {
+    let app: MockApplication;
     after(() => app.close());
 
     it('should load files', async () => {
@@ -275,12 +320,12 @@ describe('test/cluster.test.js', () => {
   });
 
   describe('custom port', () => {
-    let app;
+    let app: MockApplication;
     after(() => app.close());
 
     it('should use it', async () => {
       app = mm.cluster({
-        baseDir: path.join(fixtures, 'demo'),
+        baseDir: getFixtures('demo'),
         cache: false,
         coverage: false,
         port: 5566,

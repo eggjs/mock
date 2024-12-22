@@ -62,7 +62,7 @@ const mock = {
     _mock(process.env, 'EGG_LOG', level);
   },
 
-  home(homePath: string) {
+  home(homePath?: string) {
     if (homePath) {
       _mock(process.env, 'EGG_HOME', homePath);
     }

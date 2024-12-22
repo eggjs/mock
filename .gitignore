@@ -9,6 +9,7 @@ run/
 .idea
 .nyc_output
 package-lock.json
+.package-lock.json
 .tshy*
 .eslintcache
 dist

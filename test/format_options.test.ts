@@ -1,11 +1,11 @@
-'use strict';
+import { strict as assert } from 'node:assert';
+import path from 'node:path';
+import mm from '../src/index.js';
+import { formatOptions } from '../src/lib/format_options.js';
+import { getSourceDirname } from '../src/lib/utils.js';
+import { getFixtures } from './helper.js';
 
-const path = require('path');
-const assert = require('assert');
-const mm = require('..');
-const formatOptions = require('../lib/format_options');
-
-describe('test/format_options.test.js', () => {
+describe('test/format_options.test.ts', () => {
   afterEach(mm.restore);
 
   it('should return the default options', () => {
@@ -16,7 +16,7 @@ describe('test/format_options.test.js', () => {
     assert(options.baseDir === process.cwd());
     assert.deepEqual(options.plugins['egg-mock'], {
       enable: true,
-      path: path.join(__dirname, '..'),
+      path: path.join(getSourceDirname(), '..'),
     });
   });
 
@@ -27,7 +27,7 @@ describe('test/format_options.test.js', () => {
     try {
       formatOptions();
       throw new Error('should not run');
-    } catch (err) {
+    } catch (err: any) {
       assert(/D:[\\|\/]projectWorkSpace[\\|\/]summer/.test(err.message));
     }
   });
@@ -52,7 +52,7 @@ describe('test/format_options.test.js', () => {
   });
 
   it('should return options when set full baseDir', () => {
-    const baseDir = path.join(__dirname, 'fixtures/app');
+    const baseDir = getFixtures('app');
     const options = formatOptions({ baseDir });
     assert(options);
     assert(options.baseDir === baseDir);
@@ -61,28 +61,41 @@ describe('test/format_options.test.js', () => {
   it('should return options when set short baseDir', () => {
     const options = formatOptions({ baseDir: 'apps/foo' });
     assert(options);
-    assert(options.baseDir === path.join(__dirname, 'fixtures/apps/foo'));
+    assert(options.baseDir === getFixtures('apps/foo'));
   });
 
   it('should return options when set customEgg', () => {
-    const customEgg = path.join(__dirname, 'fixtures/bar');
+    const customEgg = getFixtures('bar');
     const options = formatOptions({ customEgg });
     assert(options);
     assert(options.customEgg === customEgg);
+    assert(options.framework === customEgg);
   });
 
   it('should return options when set customEgg=true', () => {
-    const baseDir = path.join(__dirname, 'fixtures/bar');
+    const baseDir = getFixtures('bar');
     mm(process, 'cwd', () => {
       return baseDir;
     });
     const options = formatOptions({ customEgg: true });
     assert(options);
-    assert(options.customEgg === baseDir);
+    assert.equal(options.framework, baseDir);
+    assert.equal(options.customEgg, baseDir);
+  });
+
+  it('should return options when set framework=true', () => {
+    const baseDir = getFixtures('bar');
+    mm(process, 'cwd', () => {
+      return baseDir;
+    });
+    const options = formatOptions({ framework: true });
+    assert(options);
+    assert.equal(options.framework, baseDir);
+    assert.equal(options.customEgg, baseDir);
   });
 
   it('should push plugins when in plugin dir', () => {
-    const baseDir = path.join(__dirname, 'fixtures/plugin');
+    const baseDir = getFixtures('plugin');
     mm(process, 'cwd', () => {
       return baseDir;
     });
@@ -94,8 +107,8 @@ describe('test/format_options.test.js', () => {
     });
   });
 
-  it('should not push pluings when in plugin dir but options.plugin = false', () => {
-    const baseDir = path.join(__dirname, 'fixtures/plugin');
+  it('should not push plugins when in plugin dir but options.plugin = false', () => {
+    const baseDir = getFixtures('plugin');
     mm(process, 'cwd', () => {
       return baseDir;
     });
@@ -107,7 +120,7 @@ describe('test/format_options.test.js', () => {
   });
 
   it('should not throw when no eggPlugin', () => {
-    const baseDir = path.join(__dirname, 'fixtures/plugin_throw');
+    const baseDir = getFixtures('plugin_throw');
     mm(process, 'cwd', () => {
       return baseDir;
     });
@@ -115,7 +128,7 @@ describe('test/format_options.test.js', () => {
   });
 
   it('should throw when no eggPlugin and options.plugin === true', () => {
-    const baseDir = path.join(__dirname, 'fixtures/plugin_throw');
+    const baseDir = getFixtures('plugin_throw');
     mm(process, 'cwd', () => {
       return baseDir;
     });
@@ -123,7 +136,7 @@ describe('test/format_options.test.js', () => {
       formatOptions({
         plugin: true,
       });
-    }, new RegExp(`should set eggPlugin in ${baseDir}/package.json`));
+    }, new RegExp(`should set "eggPlugin" property in ${baseDir}/package.json`));
   });
 
   it('should mock process.env.HOME when EGG_SERVER_ENV is default, test, prod', () => {

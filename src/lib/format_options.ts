@@ -41,7 +41,7 @@ export function formatOptions(initOptions?: MockOptions) {
     // it will throw when framework is not found
     framework = getFrameworkPath({ framework, baseDir: options.baseDir });
   }
-  options.framework = framework;
+  options.framework = options.customEgg = framework;
 
   const plugins = options.plugins = options.plugins || {};
 
