@@ -1,4 +1,5 @@
 import { debuglog } from 'node:util';
+import { createRequire } from 'node:module';
 import { mock } from './index.js';
 import { setupAgent, closeAgent } from './lib/agent_handler.js';
 import { getApp } from './lib/app_handler.js';
@@ -49,7 +50,13 @@ export const mochaHooks = {
  * Find active node mocha instances.
  */
 function findNodeJSMocha() {
-  const children: any = require.cache || {};
+  let children: any;
+  if (typeof require === 'function') {
+    children = require.cache || {};
+  } else {
+    children = createRequire(process.cwd()).cache || {};
+    debug('createRequire on esm');
+  }
 
   return Object.keys(children)
     .filter(function(child) {
@@ -64,8 +71,9 @@ function findNodeJSMocha() {
 import 'mocha';
 
 const modules = findNodeJSMocha();
+// console.error('modules length: %s', modules.length);
 
 for (const module of modules) {
+  if (!module) continue;
   injectContext(module);
 }
-

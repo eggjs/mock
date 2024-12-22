@@ -12,10 +12,10 @@ const debug = debuglog('@eggjs/mock/lib/inject_context');
  * @param {Function} mocha - the module of mocha
  */
 export function injectContext(mocha: any) {
-  if (!mocha || mocha._injectContextLoaded) {
+  if (mocha._injectContextLoaded) {
+    debug('mocha already injected context, skip it');
     return;
   }
-
   const { Runner } = mocha;
   const runSuite = Runner.prototype.runSuite;
   const runTests = Runner.prototype.runTests;
@@ -130,4 +130,5 @@ export function injectContext(mocha: any) {
   };
 
   mocha._injectContextLoaded = true;
+  debug('inject context success');
 }

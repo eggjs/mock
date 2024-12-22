@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import path from 'node:path';
 import { readJSONSync } from 'utility';
-import { mock } from './index.js';
+import mm, { mock } from './index.js';
 import { getBootstrapApp, setupApp } from './lib/app_handler.js';
 import { getEggOptions } from './lib/utils.js';
 
@@ -20,6 +20,6 @@ const app = getBootstrapApp();
 export {
   assert,
   app,
+  mm,
   mock,
-  mock as mm,
 };

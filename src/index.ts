@@ -90,6 +90,9 @@ export {
   // alias to mm
   proxyMock as mm,
   ApplicationUnittest as MockApplication,
+  setGetAppCallback,
+  createApp,
+  createCluster,
 };
 
 process.setMaxListeners(100);

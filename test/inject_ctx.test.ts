@@ -1,33 +1,61 @@
-const coffee = require('coffee');
-const path = require('path');
+import { strict as assert } from 'node:assert';
+import coffee from 'coffee';
+import { importResolve } from '@eggjs/utils';
+import { getFixtures } from './helper.js';
 
-describe('test/inject_ctx.test.js', () => {
-  const eggBinFile = require.resolve('egg-bin//dist/bin/cli');
+describe('test/inject_ctx.test.ts', () => {
+  const eggBinFile = importResolve('egg-bin/dist/bin/cli');
 
-  it('should inject ctx to runner', async () => {
-    const fixture = path.join(__dirname, 'fixtures/tegg-app');
+  it('should export register', () => {
+    assert.equal(importResolve('./dist/commonjs/register.js'), getFixtures('../../dist/commonjs/register.js'));
+    assert.equal(importResolve('./dist/commonjs/register'), getFixtures('../../dist/commonjs/register.js'));
+    assert.equal(importResolve('./dist/esm/register'), getFixtures('../../dist/esm/register.js'));
+    assert.equal(importResolve('./dist/esm/register.js'), getFixtures('../../dist/esm/register.js'));
+  });
+
+  it('should inject ctx to runner with commonjs', async () => {
+    const fixture = getFixtures('tegg-app');
 
     await coffee.fork(eggBinFile, [
       'test',
-      '-r', require.resolve('../register'),
+      '-r', importResolve('./dist/commonjs/register.js'),
     ], {
       cwd: fixture,
       env: {
-        EGG_FRAMEWORK: require.resolve('egg'),
+        EGG_FRAMEWORK: importResolve('egg'),
       },
     })
-      // .debug()
+      .debug()
       .expect('code', 0)
       .expect('stdout', /\d+ passing/)
       .end();
   });
 
-  it('should inject ctx to runner with setGetAppCallback', async () => {
-    const fixture = path.join(__dirname, 'fixtures/setup-app');
+  it.skip('should inject ctx to runner with esm', async () => {
+    const fixture = getFixtures('tegg-app');
 
     await coffee.fork(eggBinFile, [
       'test',
-      '-r', require.resolve('../register'),
+      'test/hooks.test.ts',
+      '-r', importResolve('./dist/esm/register.js'),
+    ], {
+      cwd: fixture,
+      env: {
+        EGG_FRAMEWORK: importResolve('egg'),
+      },
+    })
+      .debug()
+      .expect('code', 0)
+      .expect('stdout', /\d+ passing/)
+      .end();
+  });
+
+  it('should inject ctx to runner with setGetAppCallback on commonjs', async () => {
+    const fixture = getFixtures('setup-app');
+
+    await coffee.fork(eggBinFile, [
+      'test',
+      '-r', importResolve('./dist/commonjs/register.js'),
     ], {
       cwd: fixture,
     })
@@ -38,15 +66,15 @@ describe('test/inject_ctx.test.js', () => {
   });
 
   it('hook/case error should failed', async () => {
-    const fixture = path.join(__dirname, 'fixtures/failed-app');
+    const fixture = getFixtures('failed-app');
 
     await coffee.fork(eggBinFile, [
       'test',
-      '-r', require.resolve('../register'),
+      '-r', importResolve('./dist/commonjs/register.js'),
     ], {
       cwd: fixture,
       env: {
-        EGG_FRAMEWORK: require.resolve('egg'),
+        EGG_FRAMEWORK: importResolve('egg'),
       },
     })
       // .debug()
@@ -75,18 +103,18 @@ describe('test/inject_ctx.test.js', () => {
     //   2) "after all" hook: afterAll in "{root}":
     //      Error: mock get app failed
     it('get app error should failed', async () => {
-      const fixture = path.join(__dirname, 'fixtures/get-app-failed');
+      const fixture = getFixtures('get-app-failed');
 
       await coffee.fork(eggBinFile, [
         'test',
-        '-r', require.resolve('../register'),
+        '-r', importResolve('./dist/commonjs/register.js'),
       ], {
         cwd: fixture,
         env: {
-          EGG_FRAMEWORK: require.resolve('egg'),
+          EGG_FRAMEWORK: importResolve('egg'),
         },
       })
-        // .debug()
+        .debug()
         .expect('code', 1)
         .expect('stdout', /"before all" hook: beforeAll in "{root}"/)
         .end();
@@ -100,15 +128,15 @@ describe('test/inject_ctx.test.js', () => {
     //   1) "before all" hook: egg-mock-mock-ctx-failed in "{root}":
     //      Error: mock create context failed
     it('create context error should failed', async () => {
-      const fixture = path.join(__dirname, 'fixtures/create-context-failed');
+      const fixture = getFixtures('create-context-failed');
 
       await coffee.fork(eggBinFile, [
         'test',
-        '-r', require.resolve('../register'),
+        '-r', importResolve('./dist/commonjs/register.js'),
       ], {
         cwd: fixture,
         env: {
-          EGG_FRAMEWORK: require.resolve('egg'),
+          EGG_FRAMEWORK: importResolve('egg'),
         },
       })
         // .debug()
@@ -126,18 +154,18 @@ describe('test/inject_ctx.test.js', () => {
     //   2) "after all" hook: afterAll in "{root}":
     //      Error: mock app ready failed
     it('app.ready error should failed', async () => {
-      const fixture = path.join(__dirname, 'fixtures/app-ready-failed');
+      const fixture = getFixtures('app-ready-failed');
 
       await coffee.fork(eggBinFile, [
         'test',
-        '-r', require.resolve('../register'),
+        '-r', importResolve('./dist/commonjs/register.js'),
       ], {
         cwd: fixture,
         env: {
-          EGG_FRAMEWORK: require.resolve('egg'),
+          EGG_FRAMEWORK: importResolve('egg'),
         },
       })
-        // .debug()
+        .debug()
         .expect('code', 1)
         .expect('stdout', /mock app ready failed/)
         .end();
@@ -153,15 +181,15 @@ describe('test/inject_ctx.test.js', () => {
     //        should not print:
     //      Error: mock get app failed
     it('get app error should failed', async () => {
-      const fixture = path.join(__dirname, 'fixtures/test-case-get-app-failed');
+      const fixture = getFixtures('test-case-get-app-failed');
 
       await coffee.fork(eggBinFile, [
         'test',
-        '-r', require.resolve('../register'),
+        '-r', importResolve('./dist/commonjs/register.js'),
       ], {
         cwd: fixture,
         env: {
-          EGG_FRAMEWORK: require.resolve('egg'),
+          EGG_FRAMEWORK: importResolve('egg'),
         },
       })
         // .debug()
@@ -180,15 +208,15 @@ describe('test/inject_ctx.test.js', () => {
     //       at Object.mockContextScope (test/index.test.js:12:15)
     //       at next (/Users/killa/workspace/egg-mock/lib/inject_context.js:107:30)
     it('create context error should failed', async () => {
-      const fixture = path.join(__dirname, 'fixtures/test-case-create-context-failed');
+      const fixture = getFixtures('test-case-create-context-failed');
 
       await coffee.fork(eggBinFile, [
         'test',
-        '-r', require.resolve('../register'),
+        '-r', importResolve('./dist/commonjs/register.js'),
       ], {
         cwd: fixture,
         env: {
-          EGG_FRAMEWORK: require.resolve('egg'),
+          EGG_FRAMEWORK: importResolve('egg'),
         },
       })
         // .debug()

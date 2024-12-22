@@ -46,9 +46,15 @@ export function formatOptions(initOptions?: MockOptions) {
   const plugins = options.plugins = options.plugins || {};
 
   // add self as a plugin
+  let pluginPath = path.join(getSourceDirname(), '..');
+  // for dist directory
+  // convert `/eggjs/mock/dist` to `/eggjs/mock`
+  if (pluginPath.endsWith('/dist') || pluginPath.endsWith('\\dist')) {
+    pluginPath = path.join(pluginPath, '..');
+  }
   plugins['egg-mock'] = {
     enable: true,
-    path: path.join(getSourceDirname(), '..'),
+    path: pluginPath,
   };
 
   // test for plugin

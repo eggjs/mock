@@ -198,7 +198,9 @@ export function createApp(createOptions?: MockOptions) {
       if (MOCK_APP_METHOD.includes(prop)) {
         return getProperty(target, prop);
       }
-      if (!target[APP_INIT]) throw new Error(`can't get ${prop} before ready`);
+      if (!target[APP_INIT]) {
+        throw new Error(`can't get ${prop} before ready`);
+      }
       // it's asynchronous when agent and app are loading,
       // so should get the properties after loader ready
       debug('proxy handler.get %s', prop);
