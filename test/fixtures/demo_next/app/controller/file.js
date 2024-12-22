@@ -1,7 +1,5 @@
-'use strict';
-
-module.exports = function* () {
-  const stream = yield this.getFileStream();
+module.exports = async function() {
+  const stream = await this.getFileStream();
   const fields = stream.fields;
   this.body = {
     fields,

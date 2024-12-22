@@ -29,6 +29,7 @@ export default () => {
     }
     if (property) {
       if (!ctx.app[property] || typeof (ctx.app as any)[property][method] !== 'function') {
+        debug('property %s.%s not exists on app', property, method);
         ctx.status = 422;
         ctx.body = {
           success: false,
@@ -38,6 +39,8 @@ export default () => {
       }
     } else {
       if (typeof ctx.app[method] !== 'function') {
+        debug('method %s not exists on app', method);
+        console.error(ctx.app);
         ctx.status = 422;
         ctx.body = {
           success: false,

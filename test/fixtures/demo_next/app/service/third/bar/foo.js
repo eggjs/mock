@@ -1,8 +1,6 @@
-'use strict';
-
 module.exports = function(app) {
   class Main extends app.Service {
-    * get() {
+    async get() {
       return 'third';
     }
   }

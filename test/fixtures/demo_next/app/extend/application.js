@@ -1,12 +1,10 @@
-'use strict';
-
 module.exports = {
   mockDevice(obj) {
     obj.mock = true;
     return obj;
   },
 
-  * mockGenerator(obj) {
+  async mockGenerator(obj) {
     obj.mock = true;
     return obj;
   },

@@ -1,11 +1,9 @@
-'use strict';
+import { strict as assert } from 'node:assert';
+import mm, { MockApplication } from '../src/index.js';
 
-const assert = require('assert');
-const mm = require('..');
-
-describe('test/mock_httpclient.test.js', () => {
+describe('test/mock_request.test.ts', () => {
   describe('app mode', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.app({
         baseDir: 'request',
@@ -43,7 +41,7 @@ describe('test/mock_httpclient.test.js', () => {
           .expect(200)
           .expect('hello world');
         throw new Error('should not run this');
-      } catch (err) {
+      } catch (err: any) {
         assert(err);
         assert(err.message === 'Can\'t find router:session-404, please check your \'app/router.js\'');
       }
@@ -58,24 +56,24 @@ describe('test/mock_httpclient.test.js', () => {
         .unexpectHeader('cache-control');
     });
 
-    it('should test with expectHeader(header) and unexpectHeader(header) throw error', function* () {
+    it('should test with expectHeader(header) and unexpectHeader(header) throw error', async () => {
       try {
-        yield app.httpRequest()
+        await app.httpRequest()
           .get('/')
           .expect(200)
           .expect('hello world')
           .expectHeader('set-cookie1');
-      } catch (err) {
+      } catch (err: any) {
         assert(err.message === 'expected "set-cookie1" header field');
       }
 
       try {
-        yield app.httpRequest()
+        await app.httpRequest()
           .get('/')
           .expect(200)
           .expect('hello world')
           .unexpectHeader('set-cookie');
-      } catch (err) {
+      } catch (err: any) {
         assert(err.message.startsWith('unexpected "set-cookie" header field, got \"'));
       }
     });
@@ -94,7 +92,7 @@ describe('test/mock_httpclient.test.js', () => {
   });
 
   describe('cluster mode', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.cluster({
         baseDir: 'request',
@@ -132,7 +130,7 @@ describe('test/mock_httpclient.test.js', () => {
           .expect(200)
           .expect('hello world');
         throw new Error('should not run this');
-      } catch (err) {
+      } catch (err: any) {
         assert(err);
         assert(err.message === 'Can\'t find router:session-404, please check your \'app/router.js\'');
       }
@@ -147,24 +145,24 @@ describe('test/mock_httpclient.test.js', () => {
         .unexpectHeader('cache-control');
     });
 
-    it('should test with expectHeader(header) and unexpectHeader(header) throw error', function* () {
+    it('should test with expectHeader(header) and unexpectHeader(header) throw error', async () => {
       try {
-        yield app.httpRequest()
+        await app.httpRequest()
           .get('/')
           .expect(200)
           .expect('hello world')
           .expectHeader('set-cookie1');
-      } catch (err) {
+      } catch (err: any) {
         assert(err.message === 'expected "set-cookie1" header field');
       }
 
       try {
-        yield app.httpRequest()
+        await app.httpRequest()
           .get('/')
           .expect(200)
           .expect('hello world')
           .unexpectHeader('set-cookie');
-      } catch (err) {
+      } catch (err: any) {
         assert(err.message.startsWith('unexpected "set-cookie" header field, got \"'));
       }
     });

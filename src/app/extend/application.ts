@@ -355,13 +355,17 @@ export default abstract class ApplicationUnittest extends EggCore {
    * @see mm#restore
    * @function App#mockRestore
    */
-  mockRestore = restore;
+  get mockRestore() {
+    return restore;
+  }
 
   /**
    * @see mm
    * @function App#mm
    */
-  mm = mock;
+  get mm() {
+    return mock;
+  }
 
   /**
    * override loadAgent

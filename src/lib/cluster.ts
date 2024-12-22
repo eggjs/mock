@@ -343,6 +343,7 @@ export function createCluster(initOptions?: MockClusterOptions) {
 // export to let mm.restore() worked
 export async function restore() {
   for (const clusterApp of clusters.values()) {
+    // will proxy to app.mockRestore()
     await clusterApp.mockRestore();
   }
 }
