@@ -6,38 +6,52 @@ import {
 
 const debug = debuglog('@eggjs/mock/lib/mock_agent');
 
-let _mockAgent: MockAgent | null = null;
-let _global: Dispatcher;
-const httpClientDispatchers = new Map<HttpClient, Dispatcher>();
+declare namespace globalThis {
+  let __mockAgent: MockAgent | null;
+  let __globalDispatcher: Dispatcher;
+  let __httpClientDispatchers: Map<HttpClient, Dispatcher>;
+}
 
-export function getMockAgent(app?: { httpclient?: HttpClient }) {
-  if (!_global) {
-    _global = getGlobalDispatcher();
+globalThis.__mockAgent = null;
+globalThis.__httpClientDispatchers = new Map<HttpClient, Dispatcher>();
+
+export function getMockAgent(app?: { httpClient?: HttpClient }) {
+  debug('getMockAgent');
+  if (!globalThis.__globalDispatcher) {
+    globalThis.__globalDispatcher = getGlobalDispatcher();
+    debug('create global dispatcher');
   }
-  if (app?.httpclient && !httpClientDispatchers.has(app.httpclient)) {
-    httpClientDispatchers.set(app.httpclient, app.httpclient.getDispatcher());
-    debug('add new httpClient, size: %d', httpClientDispatchers.size);
+  if (app?.httpClient && !globalThis.__httpClientDispatchers.has(app.httpClient)) {
+    globalThis.__httpClientDispatchers.set(app.httpClient, app.httpClient.getDispatcher());
+    debug('add new httpClient, size: %d', globalThis.__httpClientDispatchers.size);
   }
-  if (!_mockAgent) {
-    _mockAgent = new MockAgent();
-    setGlobalDispatcher(_mockAgent);
-    if (typeof app?.httpclient?.setDispatcher === 'function') {
-      app.httpclient.setDispatcher(_mockAgent);
+  if (!globalThis.__mockAgent) {
+    globalThis.__mockAgent = new MockAgent();
+    setGlobalDispatcher(globalThis.__mockAgent);
+    if (typeof app?.httpClient?.setDispatcher === 'function') {
+      app.httpClient.setDispatcher(globalThis.__mockAgent);
     }
+    debug('create new mockAgent');
   }
-  return _mockAgent;
+  return globalThis.__mockAgent;
 }
 
 export async function restoreMockAgent() {
-  if (!_mockAgent) return;
-  if (_global) {
-    setGlobalDispatcher(_global);
+  debug('restoreMockAgent start');
+  if (globalThis.__globalDispatcher) {
+    setGlobalDispatcher(globalThis.__globalDispatcher);
+    debug('restore global dispatcher');
   }
-  for (const [ httpClient, dispatcher ] of httpClientDispatchers) {
+  debug('restore httpClient, size: %d', globalThis.__httpClientDispatchers.size);
+  for (const [ httpClient, dispatcher ] of globalThis.__httpClientDispatchers) {
     httpClient.setDispatcher(dispatcher);
   }
-  debug('restore httpClient, size: %d', httpClientDispatchers.size);
-  const agent = _mockAgent;
-  _mockAgent = null;
-  await agent.close();
+  globalThis.__httpClientDispatchers.clear();
+  if (globalThis.__mockAgent) {
+    const agent = globalThis.__mockAgent;
+    globalThis.__mockAgent = null;
+    await agent.close();
+    debug('close mockAgent');
+  }
+  debug('restoreMockAgent end');
 }

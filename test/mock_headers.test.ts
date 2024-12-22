@@ -1,19 +1,13 @@
-'use strict';
+import { strict as assert } from 'node:assert';
+import { request } from '@eggjs/supertest';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
 
-const request = require('supertest');
-const path = require('path');
-const assert = require('assert');
-const mm = require('..');
-const fixtures = path.join(__dirname, 'fixtures');
-
-describe('test/mock_headers.test.js', () => {
-
-  afterEach(mm.restore);
-
-  let app;
+describe('test/mock_headers.test.ts', () => {
+  let app: MockApplication;
   before(() => {
     app = mm.app({
-      baseDir: path.join(fixtures, 'demo'),
+      baseDir: getFixtures('demo'),
     });
     return app.ready();
   });

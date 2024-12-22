@@ -1,5 +1,6 @@
 import { mm } from 'mm';
 import { extend } from 'extend2';
+import type { Dispatcher, Headers, BodyInit } from 'urllib';
 import { getMockAgent } from './mock_agent.js';
 
 export interface MockResultOptions {
@@ -26,7 +27,17 @@ export interface MockResultOptions {
   repeats?: number;
 }
 
-export type MockResultFunction = (url: string, options: any) => MockResultOptions;
+export interface MockResponseCallbackOptions {
+  path: string;
+  method: string;
+  headers?: Headers | Record<string, string>;
+  origin?: string;
+  body?: BodyInit | Dispatcher.DispatchOptions['body'] | null;
+  maxRedirections?: number;
+}
+
+export type MockResultFunction =
+  (url: string, options: MockResponseCallbackOptions) => MockResultOptions | string;
 
 function normalizeResult(result: string | MockResultOptions) {
   if (typeof result === 'string') {

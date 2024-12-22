@@ -5,6 +5,7 @@ import assert from 'node:assert';
 import mergeDescriptors from 'merge-descriptors';
 import { isAsyncFunction, isObject } from 'is-type-of';
 import { mock, restore } from 'mm';
+import type { HttpClient } from 'urllib';
 import { Transport, Logger, LoggerLevel, LoggerMeta } from 'egg-logger';
 import { EggCore, EggCoreOptions, ContextDelegation } from '@eggjs/core';
 import { getMockAgent, restoreMockAgent } from '../../lib/mock_agent.js';
@@ -47,6 +48,8 @@ export default abstract class ApplicationUnittest extends EggCore {
   _mockHttpClient: MockHttpClientMethod;
   declare logger: Logger;
   abstract getLogger(name: string): Logger;
+  declare httpClient: HttpClient;
+  declare httpclient: HttpClient;
 
   /**
    * mock Context

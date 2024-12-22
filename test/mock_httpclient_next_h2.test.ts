@@ -1,45 +1,35 @@
-const pedding = require('pedding');
-const path = require('path');
-const fs = require('fs');
-const request = require('supertest');
-const assert = require('assert');
-const mm = require('..');
+import { strict as assert } from 'node:assert';
+import fs from 'node:fs';
+import { Server, AddressInfo } from 'node:net';
+import { request } from '@eggjs/supertest';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
 
-const fixtures = path.join(__dirname, 'fixtures');
-
-describe('test/mock_httpclient_next_h2.test.js', () => {
-  let app;
-  let server;
-  let url;
-  let url2;
+describe('test/mock_httpclient_next_h2.test.ts', () => {
+  let app: MockApplication;
+  let server: Server;
+  let url: string;
+  let url2: string;
   before(() => {
     app = mm.app({
-      baseDir: path.join(fixtures, 'demo_next_h2'),
+      baseDir: getFixtures('demo_next_h2'),
     });
     return app.ready();
   });
   before(() => {
     server = app.listen();
-    url = `http://127.0.0.1:${server.address().port}/mock_url`;
-    url2 = `http://127.0.0.1:${server.address().port}/mock_url2`;
+    const address = server.address() as AddressInfo;
+    url = `http://127.0.0.1:${address.port}/mock_url`;
+    url2 = `http://127.0.0.1:${address.port}/mock_url2`;
   });
   after(() => app.close());
   afterEach(mm.restore);
 
-  it('should mock url and get response event on urllib', done => {
-    done = pedding(2, done);
+  it('should mock url and get response event on urllib', async () => {
     app.mockCsrf();
     app.mockHttpclient(url, {
       data: Buffer.from('mock all response'),
     });
-
-    request(server)
-      .get('/urllib')
-      .expect({
-        get: 'mock all response',
-        post: 'mock all response',
-      })
-      .expect(200, done);
 
     app.httpclient.once('response', result => {
       assert('url' in result.req);
@@ -50,11 +40,10 @@ describe('test/mock_httpclient_next_h2.test.js', () => {
       assert(result.res.statusCode === 200);
       assert.deepEqual(result.res.headers, {});
       assert(result.res.rt);
-      done();
     });
 
     let count = 0;
-    app.httpclient.on('response', result => {
+    app.httpClient.on('response', result => {
       if (count === 0) {
         const options = result.req.options;
         assert(options.method === 'GET');
@@ -65,6 +54,15 @@ describe('test/mock_httpclient_next_h2.test.js', () => {
       }
       count++;
     });
+    await request(server)
+      .get('/urllib')
+      .expect({
+        get: 'mock all response',
+        post: 'mock all response',
+      })
+      .expect(200);
+    assert.equal(count, 2);
+    await mm.restore();
   });
 
   it('should mock url using app.mockAgent().intercept()', async () => {
@@ -94,15 +92,16 @@ describe('test/mock_httpclient_next_h2.test.js', () => {
   });
 
   it('should support on streaming', async () => {
+    const textFile = getFixtures('../mock_httpclient_next_h2.test.ts');
     app.mockHttpclient(url, 'get', {
-      data: fs.readFileSync(__filename),
+      data: fs.readFileSync(textFile),
     });
 
     const res = await request(server)
       .get('/streaming')
       .expect(200);
     assert.match(res.body.toString(), /should support on streaming/);
-    assert.equal(res.body.toString(), fs.readFileSync(__filename, 'utf8'));
+    assert.equal(res.body.toString(), fs.readFileSync(textFile, 'utf8'));
   });
 
   it('should mock url support multi method', async () => {
@@ -505,10 +504,10 @@ describe('test/mock_httpclient_next_h2.test.js', () => {
 
   it('should support fn', async () => {
     app.mockCsrf();
-    app.mockHttpclient(url, 'get', (url, opt) => {
+    app.mockHttpClient(url, 'get', (url, opt) => {
       return `mock ${url} with ${opt.path}`;
     });
-    app.mockHttpclient(url, 'post', 'mock url post');
+    app.mockHttpClient(url, 'post', 'mock url post');
 
     await request(server)
       .get('/urllib')
@@ -523,9 +522,11 @@ describe('test/mock_httpclient_next_h2.test.js', () => {
   it('should mock fn with multi-request without error', async () => {
     app.mockCsrf();
     let i = 0;
-    app.mockHttpclient(url, 'post', () => {
+    app.mockHttpclient(url, 'post', (a, b) => {
+      assert(a);
+      assert(b);
       i++;
-      return {};
+      return { data: 'mock url post' };
     });
 
     await request(server).get('/urllib').expect(200);

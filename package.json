@@ -40,15 +40,12 @@
     "globby": "^11.1.0",
     "is-type-of": "^2.2.0",
     "merge-descriptors": "^2.0.0",
-    "methods": "^1.1.2",
     "mm": "^4.0.1",
     "sdk-base": "^5.0.0",
     "utility": "^2.3.0"
   },
   "peerDependencies": {
-    "egg": "beta",
-    "mocha": "^10.2.0",
-    "urllib": "^4"
+    "mocha": "^10.2.0"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.1",
