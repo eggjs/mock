@@ -1,4 +1,5 @@
-import { mm } from 'mm';
+import mm from 'mm';
+import { mock as _mock } from 'mm';
 import { createCluster } from './lib/cluster.js';
 import { createApp } from './lib/app.js';
 // import { getMockAgent } from './lib/mock_agent.js';
@@ -48,8 +49,8 @@ const mock = {
    * @see https://github.com/eggjs/egg-core/blob/master/lib/loader/egg_loader.js#L78
    */
   env(env: string) {
-    mm(process.env, 'EGG_MOCK_SERVER_ENV', env);
-    mm(process.env, 'EGG_SERVER_ENV', env);
+    _mock(process.env, 'EGG_MOCK_SERVER_ENV', env);
+    _mock(process.env, 'EGG_SERVER_ENV', env);
   },
 
   /**
@@ -58,23 +59,36 @@ const mock = {
    */
   consoleLevel(level: string) {
     level = (level || '').toUpperCase();
-    mm(process.env, 'EGG_LOG', level);
+    _mock(process.env, 'EGG_LOG', level);
   },
 
   home(homePath: string) {
     if (homePath) {
-      mm(process.env, 'EGG_HOME', homePath);
+      _mock(process.env, 'EGG_HOME', homePath);
     }
   },
 
   setGetAppCallback,
 };
 
-export default mock;
+// import mm from '@eggjs/mock';
+const proxyMock = new Proxy(_mock, {
+  apply(target, _, args) {
+    return target(args[0], args[1], args[2]);
+  },
+  get(_target, property, receiver) {
+    // import mm from '@eggjs/mock';
+    // mm.isMocked(foo, 'bar')
+    return Reflect.get(mock, property, receiver);
+  },
+}) as unknown as ((target: any, property: PropertyKey, value?: any) => void) & typeof mock;
+
+export default proxyMock;
+
 export {
-  mock,
+  proxyMock as mock,
   // alias to mm
-  mock as mm,
+  proxyMock as mm,
   ApplicationUnittest as MockApplication,
 };
 

@@ -1,9 +1,7 @@
-'use strict';
+import mm, { MockApplication } from '../src/index.js';
 
-const mm = require('..');
-
-describe('test/mock_cluster_without_security.test.js', () => {
-  let app;
+describe('test/mock_cluster_without_security_plugin.test.ts', () => {
+  let app: MockApplication;
   before(() => {
     app = mm.cluster({
       baseDir: 'disable-security',

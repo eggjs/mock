@@ -44,9 +44,11 @@ export interface MockContextDelegation extends ContextDelegation {
 }
 
 export default abstract class ApplicationUnittest extends EggCore {
+  [key: string]: any;
   declare options: MockOptions & EggCoreOptions;
   _mockHttpClient: MockHttpClientMethod;
   declare logger: Logger;
+  declare coreLogger: Logger;
   abstract getLogger(name: string): Logger;
   declare httpClient: HttpClient;
   declare httpclient: HttpClient;
@@ -420,7 +422,7 @@ export default abstract class ApplicationUnittest extends EggCore {
     });
   }
 
-  __checkExpectLog(expectOrNot: boolean, str: string | RegExp, logger: string | Logger) {
+  __checkExpectLog(expectOrNot: boolean, str: string | RegExp, logger?: string | Logger) {
     logger = logger || this.logger;
     if (typeof logger === 'string') {
       logger = this.getLogger(logger);
@@ -456,7 +458,7 @@ export default abstract class ApplicationUnittest extends EggCore {
    * @param {String|Logger} [logger] - logger instance, default is `ctx.logger`
    * @function App#expectLog
    */
-  expectLog(str: string | RegExp, logger: string | Logger) {
+  expectLog(str: string | RegExp, logger?: string | Logger) {
     this.__checkExpectLog(true, str, logger);
   }
 
@@ -466,7 +468,7 @@ export default abstract class ApplicationUnittest extends EggCore {
    * @param {String|Logger} [logger] - logger instance, default is `ctx.logger`
    * @function App#notExpectLog
    */
-  notExpectLog(str: string | RegExp, logger: string | Logger) {
+  notExpectLog(str: string | RegExp, logger?: string | Logger) {
     this.__checkExpectLog(false, str, logger);
   }
 

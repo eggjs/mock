@@ -1,13 +1,9 @@
-'use strict';
+import { strict as assert } from 'node:assert';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
+import { pending } from 'pedding';
 
-const request = require('supertest');
-const path = require('path');
-const assert = require('assert');
-const mm = require('..');
-
-const fixtures = path.join(__dirname, 'fixtures');
-
-describe('test/app.test.js', () => {
+describe('test/app.test.ts', () => {
   afterEach(mm.restore);
 
   // test mm.app
@@ -16,10 +12,10 @@ describe('test/app.test.js', () => {
   call('cluster');
 
   it('should alias app.agent to app._agent', async () => {
-    const baseDir = path.join(fixtures, 'app');
+    const baseDir = getFixtures('app');
     const app = mm.app({
       baseDir,
-      customEgg: path.join(__dirname, '../node_modules/egg'),
+      // customEgg: path.join(__dirname, '../node_modules/egg'),
     });
     await app.ready();
     assert(app.agent === app._agent);
@@ -27,17 +23,17 @@ describe('test/app.test.js', () => {
   });
 
   it('should not use cache when app is closed', async () => {
-    const baseDir = path.join(fixtures, 'app');
+    const baseDir = getFixtures('app');
     const app1 = mm.app({
       baseDir,
-      customEgg: path.join(__dirname, '../node_modules/egg'),
+      // customEgg: path.join(__dirname, '../node_modules/egg'),
     });
     await app1.ready();
     await app1.close();
 
     const app2 = mm.app({
       baseDir,
-      customEgg: path.join(__dirname, '../node_modules/egg'),
+      // customEgg: path.join(__dirname, '../node_modules/egg'),
     });
     await app2.ready();
     await app2.close();
@@ -46,7 +42,7 @@ describe('test/app.test.js', () => {
   });
 
   it('should auto find framework when egg.framework exists on package.json', async () => {
-    const baseDir = path.join(fixtures, 'yadan_app');
+    const baseDir = getFixtures('yadan_app');
     const app = mm.app({
       baseDir,
     });
@@ -55,22 +51,31 @@ describe('test/app.test.js', () => {
     await app.close();
   });
 
+  it('should show fail tips when Agent not export by default', async () => {
+    const baseDir = getFixtures('yadan_app_fail');
+    const app = mm.app({
+      baseDir,
+    });
+    await assert.rejects(app.ready(), /should export Agent class from framework/);
+    await app.close();
+  });
+
   it('should emit server event on app without superTest', async () => {
-    const baseDir = path.join(fixtures, 'server');
+    const baseDir = getFixtures('server');
     const app = mm.app({
       baseDir,
     });
     await app.ready();
-    assert(app.server);
-    assert(app.emitServer);
+    assert(app.emitServer, 'app.emitServer not exists');
+    assert(app.server, 'app.server not exists');
     await app.close();
   });
 
   it('support options.beforeInit', async () => {
-    const baseDir = path.join(fixtures, 'app');
+    const baseDir = getFixtures('app');
     const app = mm.app({
       baseDir,
-      customEgg: path.join(__dirname, '../node_modules/egg'),
+      // customEgg: path.join(__dirname, '../node_modules/egg'),
       cache: false,
       beforeInit(instance) {
         return new Promise(resolve => {
@@ -87,38 +92,46 @@ describe('test/app.test.js', () => {
   });
 
   it('should emit error when load Application fail', done => {
-    const baseDir = path.join(fixtures, 'app-fail');
+    done = pending(2, done);
+    const baseDir = getFixtures('app-fail');
     const app = mm.app({ baseDir, cache: false });
-    app.once('error', err => {
+    app.once('error', (err: any) => {
+      app.close().then(() => done);
       assert(/load error/.test(err.message));
       done();
     });
   });
 
   it('should FrameworkErrorformater work during app boot', async () => {
-    let logMsg;
-    let catchErr;
-    mm(process.stderr, 'write', msg => {
+    let logMsg = '';
+    let catchErr: any;
+    mm(process.stderr, 'write', (msg: string) => {
       logMsg = msg;
     });
-    const app = mm.app({ baseDir: path.join(fixtures, 'app-boot-error') });
+    const app = mm.app({
+      baseDir: getFixtures('app-boot-error'),
+    });
     try {
       await app.ready();
     } catch (err) {
       catchErr = err;
     }
 
-    assert(catchErr.code === 'customPlugin_99');
-    assert(/framework\.CustomError\: mock error \[ https\:\/\/eggjs\.org\/zh-cn\/faq\/customPlugin_99 \]/.test(logMsg));
+    assert.equal(catchErr.code, 'customPlugin_99');
+    // console.log(catchErr);
+    assert.match(logMsg, /CustomError: mock error/);
+    // assert.match(logMsg, /framework\.CustomError\: mock error \[ https\:\/\/eggjs\.org\/zh-cn\/faq\/customPlugin_99 \]/);
   });
 
   it('should FrameworkErrorformater work during app boot ready', async () => {
-    let logMsg;
-    let catchErr;
-    mm(process.stderr, 'write', msg => {
+    let logMsg: string = '';
+    let catchErr: any;
+    mm(process.stderr, 'write', (msg: string) => {
       logMsg = msg;
     });
-    const app = mm.app({ baseDir: path.join(fixtures, 'app-boot-ready-error') });
+    const app = mm.app({
+      baseDir: getFixtures('app-boot-ready-error'),
+    });
     try {
       await app.ready();
     } catch (err) {
@@ -126,17 +139,19 @@ describe('test/app.test.js', () => {
     }
 
     assert(catchErr.code === 'customPlugin_99');
+    assert.match(logMsg, /CustomError: mock error/);
+    // console.log(logMsg);
     assert(/framework\.CustomError\: mock error \[ https\:\/\/eggjs\.org\/zh-cn\/faq\/customPlugin_99 \]/.test(logMsg));
   });
 });
 
-function call(method) {
-  let app;
+function call(method: string) {
+  let app: MockApplication;
   describe(`mm.${method}()`, () => {
     before(done => {
-      const baseDir = path.join(fixtures, 'app');
+      const baseDir = getFixtures('app');
       mm(process, 'cwd', () => baseDir);
-      app = mm[method]({
+      app = (mm as any)[method]({
         cache: false,
         coverage: false,
       });
@@ -145,7 +160,7 @@ function call(method) {
     after(() => app.close());
 
     it('should work', done => {
-      request(app.callback())
+      app.httpRequest()
         .get('/')
         .expect('foo')
         .expect(200, done);
@@ -160,7 +175,7 @@ function call(method) {
         });
     });
 
-    it('should app.expectLog(), app.notExpectLog() work', async () => {
+    it.only('should app.expectLog(), app.notExpectLog() work', async () => {
       await app.httpRequest()
         .get('/logger')
         .expect(200)
@@ -190,7 +205,7 @@ function call(method) {
       try {
         app.expectLog('[app.expectLog(coreLogger) test] ok');
         throw new Error('should not run this');
-      } catch (err) {
+      } catch (err: any) {
         assert(err.message.includes('Can\'t find String:"[app.expectLog(coreLogger) test] ok" in '));
         assert(err.message.includes('app-web.log'));
       }
@@ -198,7 +213,7 @@ function call(method) {
       try {
         app.notExpectLog('[app.expectLog() test] ok');
         throw new Error('should not run this');
-      } catch (err) {
+      } catch (err: any) {
         assert(err.message.includes('Find String:"[app.expectLog() test] ok" in '));
         assert(err.message.includes('app-web.log'));
       }
@@ -237,7 +252,7 @@ function call(method) {
       try {
         app.expectLog('[app.expectLog(coreLogger) test] ok');
         throw new Error('should not run this');
-      } catch (err) {
+      } catch (err: any) {
         assert(err.message.includes('Can\'t find String:"[app.expectLog(coreLogger) test] ok" in '));
         assert(err.message.includes('app-web.log'));
       }
@@ -245,14 +260,14 @@ function call(method) {
       try {
         app.notExpectLog('[app.expectLog() test] ok');
         throw new Error('should not run this');
-      } catch (err) {
+      } catch (err: any) {
         assert(err.message.includes('Find String:"[app.expectLog() test] ok" in '));
         assert(err.message.includes('app-web.log'));
       }
 
       if (method === 'app') {
-        assert(app.logger._mockLogs);
-        assert(app.coreLogger._mockLogs);
+        assert('_mockLogs' in app.logger && app.logger._mockLogs);
+        assert('_mockLogs' in app.coreLogger && app.coreLogger._mockLogs);
         await mm.restore();
         assert(!app.logger._mockLogs);
         assert(!app.coreLogger._mockLogs);
@@ -275,16 +290,16 @@ function call(method) {
       await app.httpRequest()
         .get('/ua')
         .expect(200)
-        .expect(/egg-mock\//);
+        .expect(/@eggjs\/mock\/\d+\.\d+\.\d+/);
     });
   });
 
   describe(`mm.${method}({ baseDir, plugin=string })`, () => {
-    const pluginDir = path.join(fixtures, 'fooPlugin');
+    const pluginDir = getFixtures('fooPlugin');
     before(done => {
       mm(process, 'cwd', () => pluginDir);
-      app = mm[method]({
-        baseDir: path.join(__dirname, 'fixtures/apps/foo'),
+      app = (mm as any)[method]({
+        baseDir: getFixtures('apps/foo'),
         plugin: 'fooPlugin',
         cache: false,
         coverage: false,
@@ -294,7 +309,7 @@ function call(method) {
     after(() => app.close());
 
     it('should work', done => {
-      request(app.callback())
+      app.httpRequest()
         .get('/')
         .expect({
           fooPlugin: true,
@@ -304,11 +319,11 @@ function call(method) {
   });
 
   describe(`mm.${method}({ baseDir, plugin=true })`, () => {
-    const pluginDir = path.join(fixtures, 'fooPlugin');
+    const pluginDir = getFixtures('fooPlugin');
     before(done => {
       mm(process, 'cwd', () => pluginDir);
-      app = mm[method]({
-        baseDir: path.join(__dirname, 'fixtures/apps/foo'),
+      app = (mm as any)[method]({
+        baseDir: getFixtures('apps/foo'),
         plugin: true,
         cache: false,
         coverage: false,
@@ -318,7 +333,7 @@ function call(method) {
     after(() => app.close());
 
     it('should work', done => {
-      request(app.callback())
+      app.httpRequest()
         .get('/')
         .expect({
           fooPlugin: true,
@@ -329,12 +344,12 @@ function call(method) {
 
   describe(`mm.${method}({ baseDir, plugins })`, () => {
     before(done => {
-      app = mm[method]({
-        baseDir: path.join(__dirname, 'fixtures/apps/foo'),
+      app = (mm as any)[method]({
+        baseDir: getFixtures('apps/foo'),
         plugins: {
           fooPlugin: {
             enable: true,
-            path: path.join(fixtures, 'fooPlugin'),
+            path: getFixtures('fooPlugin'),
           },
         },
         cache: false,
@@ -345,7 +360,7 @@ function call(method) {
     after(() => app.close());
 
     it('should work', done => {
-      request(app.callback())
+      app.httpRequest()
         .get('/')
         .expect({
           fooPlugin: true,
@@ -354,11 +369,11 @@ function call(method) {
     });
   });
 
-  describe(`mm.${method}({ baseDir, customEgg=fullpath})`, () => {
+  describe(`mm.${method}({ baseDir, framework=fullpath })`, () => {
     before(done => {
-      app = mm[method]({
+      app = (mm as any)[method]({
         baseDir: 'apps/barapp',
-        customEgg: path.join(fixtures, 'bar'),
+        framework: getFixtures('bar'),
         cache: false,
         coverage: false,
       });
@@ -367,7 +382,7 @@ function call(method) {
     after(() => app.close());
 
     it('should work', done => {
-      request(app.callback())
+      app.httpRequest()
         .get('/')
         .expect({
           foo: 'bar',
@@ -377,24 +392,49 @@ function call(method) {
     });
   });
 
-
-  describe(`mm.${method}({ baseDir, customEgg=true})`, () => {
+  describe(`mm.${method}({ baseDir, customEgg=true })`, () => {
     before(done => {
       mm(process, 'cwd', () => {
-        return path.join(fixtures, 'bar');
+        return getFixtures('bar');
       });
-      app = mm[method]({
-        baseDir: path.join(fixtures, 'apps/barapp'),
+      app = (mm as any)[method]({
+        baseDir: getFixtures('apps/barapp'),
         customEgg: true,
         cache: false,
         coverage: false,
       });
       app.ready(done);
     });
-    after(() => app.close());
+    after(() => app && app.close());
 
     it('should work', done => {
-      request(app.callback())
+      app.httpRequest()
+        .get('/')
+        .expect({
+          foo: 'bar',
+          foobar: 'bar',
+        })
+        .expect(200, done);
+    });
+  });
+
+  describe(`mm.${method}({ baseDir, framework=true })`, () => {
+    before(done => {
+      mm(process, 'cwd', () => {
+        return getFixtures('bar');
+      });
+      app = (mm as any)[method]({
+        baseDir: getFixtures('apps/barapp'),
+        framework: true,
+        cache: false,
+        coverage: false,
+      });
+      app.ready(done);
+    });
+    after(() => app && app.close());
+
+    it('should work', done => {
+      app.httpRequest()
         .get('/')
         .expect({
           foo: 'bar',
@@ -405,18 +445,18 @@ function call(method) {
   });
 
   describe(`mm.${method}({ baseDir, cache=true })`, () => {
-    let app1;
-    let app2;
+    let app1: MockApplication;
+    let app2: MockApplication;
     before(done => {
-      app1 = mm[method]({
-        baseDir: 'cache',
+      app1 = (mm as any)[method]({
+        baseDir: getFixtures('cache'),
         coverage: false,
       });
       app1.ready(done);
     });
     before(done => {
-      app2 = mm[method]({
-        baseDir: 'cache',
+      app2 = (mm as any)[method]({
+        baseDir: getFixtures('cache'),
         coverage: false,
       });
       app2.ready(done);

@@ -28,13 +28,16 @@ export function formatOptions(initOptions?: MockOptions) {
     options.baseDir = path.join(process.cwd(), 'test/fixtures', options.baseDir);
   }
 
-  let framework = options.framework ?? options.customEgg;
+  let framework = initOptions?.framework ?? initOptions?.customEgg;
   // test for framework
-  if (initOptions?.framework === true) {
+  if (framework === true) {
     framework = process.cwd();
     // disable plugin test when framework test
     options.plugin = false;
   } else {
+    if (!framework) {
+      framework = '';
+    }
     // it will throw when framework is not found
     framework = getFrameworkPath({ framework, baseDir: options.baseDir });
   }
@@ -45,7 +48,7 @@ export function formatOptions(initOptions?: MockOptions) {
   // add self as a plugin
   plugins['egg-mock'] = {
     enable: true,
-    path: getSourceDirname(),
+    path: path.join(getSourceDirname(), '..'),
   };
 
   // test for plugin

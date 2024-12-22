@@ -11,6 +11,8 @@ export interface MockOptions {
 
   /**
    * The directory of the egg framework
+   *
+   * Set to `true` to use the current directory as framework directory
    */
   framework?: string | boolean;
 
@@ -22,7 +24,7 @@ export interface MockOptions {
   /**
    * @deprecated please use framework instead
    */
-  customEgg?: string;
+  customEgg?: string | boolean;
 
   /**
    * Cache application based on baseDir

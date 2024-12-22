@@ -1,15 +1,11 @@
-'use strict';
+import { strict as assert } from 'node:assert';
+import fs from 'node:fs';
+import { scheduler } from 'node:timers/promises';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { sleep } = require('../lib/utils');
-const mm = require('..');
-
-const fixtures = path.join(__dirname, 'fixtures');
-
-describe('test/mock_cluster_restore.test.js', () => {
-  let app;
+describe('test/mock_cluster_restore.test.ts', () => {
+  let app: MockApplication;
   before(() => {
     app = mm.cluster({
       baseDir: 'demo',
@@ -21,14 +17,14 @@ describe('test/mock_cluster_restore.test.js', () => {
 
   afterEach(mm.restore);
 
-  it('should mock cluster restore work', function* () {
+  it('should mock cluster restore work', async () => {
     app.mockSession({
       user: {
         foo: 'bar',
       },
       hello: 'egg mock session data',
     });
-    yield app.httpRequest()
+    await app.httpRequest()
       .get('/session')
       .expect({
         user: {
@@ -38,13 +34,13 @@ describe('test/mock_cluster_restore.test.js', () => {
       });
 
     mm.restore();
-    yield app.httpRequest()
+    await app.httpRequest()
       .get('/session')
       .expect({});
   });
 
   describe('handle uncaughtException', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.cluster({
         baseDir: 'apps/app-throw',
@@ -54,15 +50,15 @@ describe('test/mock_cluster_restore.test.js', () => {
     });
     after(() => app.close());
 
-    it('should handle uncaughtException and log it', function* () {
-      yield app.httpRequest()
+    it('should handle uncaughtException and log it', async () => {
+      await app.httpRequest()
         .get('/throw')
         .expect('foo')
         .expect(200);
 
-      yield sleep(1100);
-      const logfile = path.join(fixtures, 'apps/app-throw/logs/app-throw/common-error.log');
-      const body = fs.readFileSync(logfile, 'utf8');
+      await scheduler.wait(1100);
+      const logFile = getFixtures('apps/app-throw/logs/app-throw/common-error.log');
+      const body = fs.readFileSync(logFile, 'utf8');
       assert(body.includes('ReferenceError: a is not defined (uncaughtException throw'));
     });
   });

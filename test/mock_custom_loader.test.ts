@@ -1,15 +1,13 @@
-'use strict';
+import { strict as assert } from 'node:assert';
+import { importModule } from '@eggjs/utils';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
 
-const path = require('path');
-const assert = require('assert');
-const mm = require('..');
-const fixtures = path.join(__dirname, 'fixtures');
-
-describe('test/mock_custom_loader.test.js', () => {
-  let app;
+describe('test/mock_custom_loader.test.ts', () => {
+  let app: MockApplication;
   before(async () => {
     app = mm.app({
-      baseDir: path.join(fixtures, 'custom-loader'),
+      baseDir: getFixtures('custom-loader'),
     });
     await app.ready();
   });
@@ -49,7 +47,11 @@ describe('test/mock_custom_loader.test.js', () => {
       .expect(200);
   });
 
-  it('should not override the existing API', () => {
-    assert(app.mockEnv === require('../app/extend/application.js').mockEnv);
+  it('should not override the existing API', async () => {
+    const mod = await importModule(getFixtures('../../dist/commonjs/app/extend/application.js'), {
+      importDefaultOnly: true,
+    });
+    assert.equal(typeof app.mockEnv, 'function');
+    assert.equal(app.mockEnv, mod.prototype.mockEnv);
   });
 });

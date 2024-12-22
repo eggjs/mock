@@ -3,6 +3,7 @@ coverage/
 logs/
 !test/fixtures/apps/app-not-clean/logs/keep
 !test/fixtures/yadan/node_modules
+!test/fixtures/yadan_*/node_modules
 run/
 .vscode
 .idea

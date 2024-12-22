@@ -1,4 +1,5 @@
 import { debuglog } from 'node:util';
+import { strict as assert } from 'node:assert';
 import os from 'node:os';
 import path from 'node:path';
 import { Base } from 'sdk-base';
@@ -77,6 +78,7 @@ export class MockApplication extends Base {
     this.options.clusterPort = await detectPort();
     debug('get clusterPort %s', this.options.clusterPort);
     const egg = await importModule(this.options.framework);
+    assert(egg.Agent, `should export Agent class from framework ${this.options.framework}`);
 
     const Agent = egg.Agent;
     const agent = this._agent = new Agent({ ...this.options }) as Agent;
@@ -133,7 +135,6 @@ export class MockApplication extends Base {
       this._app.on(args[0], args[1]);
     } else {
       debug('on(%s), cache it because app has not init', args);
-      console.error('on', this._initOnListeners, this);
       this._initOnListeners.add(args);
       super.on(args[0], args[1]);
     }

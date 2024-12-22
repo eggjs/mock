@@ -37,7 +37,6 @@ describe('some test', () => {
   before(() => {
     app = mm.app({
       baseDir: 'apps/foo'
-      customEgg: path.join(__dirname, '../node_modules/egg'),
     });
     return app.ready();
   })
@@ -62,7 +61,7 @@ describe('some test', () => {
 ```js
 before(() => {
   app = mm.app({
-    customEgg: path.join(__dirname, '../node_modules/egg'),
+    framework: path.join(__dirname, '../node_modules/egg'),
   });
   return app.ready();
 });
@@ -70,13 +69,13 @@ before(() => {
 
 ### 框架开发者
 
-框架开发者需要指定 customEgg，会将当前路径指定为框架入口
+框架开发者需要指定 `framework`，会将当前路径指定为框架入口
 
 ```js
 before(() => {
   app = mm.app({
     baseDir: 'apps/demo',
-    customEgg: true,
+    framework: true,
   });
   return app.ready();
 });
@@ -90,13 +89,12 @@ before(() => {
 before(() => {
   app = mm.app({
     baseDir: 'apps/demo',
-    customEgg: path.join(__dirname, '../node_modules/egg'),
   });
   return app.ready();
 });
 ```
 
-也可以通过 customEgg 指定其他框架，比如希望在 aliyun-egg 和 framework-b 同时测试此插件。
+也可以通过 `framework` 指定其他框架，比如希望在 aliyun-egg 和 framework-b 同时测试此插件。
 
 ```js
 describe('aliyun-egg', () => {
@@ -104,7 +102,7 @@ describe('aliyun-egg', () => {
   before(() => {
     app = mm.app({
       baseDir: 'apps/demo',
-      customEgg: path.join(__dirname, 'node_modules/aliyun-egg'),
+      framework: path.join(__dirname, 'node_modules/aliyun-egg'),
     });
     return app.ready();
   });
@@ -115,7 +113,7 @@ describe('framework-b', () => {
   before(() => {
     app = mm.app({
       baseDir: 'apps/demo',
-      customEgg: path.join(__dirname, 'node_modules/framework-b'),
+      framework: path.join(__dirname, 'node_modules/framework-b'),
     });
     return app.ready();
   });
@@ -128,7 +126,6 @@ describe('framework-b', () => {
 before(() => {
   app = mm.app({
     baseDir: 'apps/demo',
-    customEgg: path.join(__dirname, 'node_modules/egg'),
     plugin: false,
   });
   return app.ready();
@@ -218,7 +215,7 @@ mm.app 和 mm.cluster 的配置参数
 ```js
 mm.app({
   baseDir: path.join(__dirname, 'fixtures/apps/demo'),
-})
+});
 ```
 
 也支持缩写，找 test/fixtures 目录下的
@@ -226,18 +223,18 @@ mm.app({
 ```js
 mm.app({
   baseDir: 'apps/demo',
-})
+});
 ```
 
-#### customEgg {String/Boolean}
+#### framework {String/Boolean}
 
 指定框架路径
 
 ```js
 mm.app({
   baseDir: 'apps/demo',
-  customEgg: path.join(__dirname, 'fixtures/egg'),
-})
+  framework: path.join(__dirname, 'fixtures/egg'),
+});
 ```
 
 对于框架的测试用例，可以指定 true，会自动加载当前路径。

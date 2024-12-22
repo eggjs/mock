@@ -269,10 +269,9 @@ export class ClusterApplication extends Coffee {
     ], {
       stdio: 'pipe',
     });
-    if (child.stderr && child.stderr.length > 0) {
-      console.error(child.stderr.toString());
-    }
-
+    // if (child.stderr && child.stderr.length > 0) {
+    //   console.error(child.stderr.toString());
+    // }
     let result;
     if (child.stdout && child.stdout.length > 0) {
       if (needResult) {

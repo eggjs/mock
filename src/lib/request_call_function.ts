@@ -15,7 +15,8 @@ httpClient.request(url, {
   dataType: 'json',
 }).then(({ data }) => {
   if (!data.success) {
-    console.error('POST %s error, method: %s, args: %j', url, method, args);
+    // console.log('POST %s error, method: %s, args: %j, result data: %j',
+    //   url, method, args, data);
     if (data.error) {
       console.error(data.error);
     } else if (data.message) {

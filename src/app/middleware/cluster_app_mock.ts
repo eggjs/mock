@@ -4,7 +4,7 @@ import { ContextDelegation, Next } from '@eggjs/core';
 const debug = debuglog('@eggjs/mock/app/middleware/cluster_app_mock');
 
 export default () => {
-  return function clusterAppMock(ctx: ContextDelegation, next: Next) {
+  return async function clusterAppMock(ctx: ContextDelegation, next: Next) {
     // use originalUrl to make sure other middlewares can't change request url
     if (ctx.originalUrl !== '/__egg_mock_call_function') {
       return next();
@@ -40,7 +40,6 @@ export default () => {
     } else {
       if (typeof ctx.app[method] !== 'function') {
         debug('method %s not exists on app', method);
-        console.error(ctx.app);
         ctx.status = 422;
         ctx.body = {
           success: false,
