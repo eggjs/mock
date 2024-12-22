@@ -54,6 +54,7 @@ function findNodeJSMocha() {
   if (typeof require === 'function') {
     children = require.cache || {};
   } else {
+    // FIXME: not work on ESM
     children = createRequire(process.cwd()).cache || {};
     debug('createRequire on esm');
   }
