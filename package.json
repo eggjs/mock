@@ -74,8 +74,8 @@
     "lint": "eslint --cache src test --ext .ts",
     "pretest": "npm run lint -- --fix && npm run prepublishOnly",
     "test": "egg-bin test",
-    "preci": "npm run lint && npm run prepublishOnly && attw --pack",
-    "ci": "egg-bin cov",
+    "preci": "npm run lint && npm run prepublishOnly && attw --pack --profile node16",
+    "ci": "egg-bin cov -p",
     "prepublishOnly": "tshy && tshy-after"
   },
   "type": "module",

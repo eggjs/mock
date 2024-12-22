@@ -1,16 +1,12 @@
-'use strict';
+import { strict as assert } from 'node:assert';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
 
-const request = require('supertest');
-const path = require('path');
-const assert = require('assert');
-const mm = require('..');
-const fixtures = path.join(__dirname, 'fixtures');
-
-describe('test/mock_cookies.test.js', () => {
-  let app;
+describe('test/mock_cookies.test.ts', () => {
+  let app: MockApplication;
   before(done => {
     app = mm.app({
-      baseDir: path.join(fixtures, 'apps/mock_cookies'),
+      baseDir: getFixtures('apps/mock_cookies'),
     });
     app.ready(done);
   });
@@ -21,7 +17,7 @@ describe('test/mock_cookies.test.js', () => {
     const ctx = app.mockContext();
     assert(!ctx.cookies.get('foo'));
 
-    request(app.callback())
+    app.httpRequest()
       .get('/')
       .expect(function(res) {
         assert.deepEqual(res.body, {});
@@ -33,10 +29,8 @@ describe('test/mock_cookies.test.js', () => {
     app.mockCookies({
       foo: 'bar cookie',
     });
-    // const ctx = app.mockContext();
-    // assert(ctx.cookies.get('foo') === 'bar cookie');
 
-    request(app.callback())
+    app.httpRequest()
       .get('/')
       .expect({
         cookieValue: 'bar cookie',
@@ -48,7 +42,7 @@ describe('test/mock_cookies.test.js', () => {
   it('should pass cookie opt', done => {
     app.mockCookies({});
 
-    request(app.callback())
+    app.httpRequest()
       .get('/')
       .set('cookie', 'foo=bar cookie')
       .expect({
@@ -57,5 +51,4 @@ describe('test/mock_cookies.test.js', () => {
       })
       .expect(200, done);
   });
-
 });

@@ -1,8 +1,9 @@
-const { strict: assert } = require('assert');
-const mm = require('..');
+import { strict as assert } from 'node:assert';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
 
-describe('test/mock_context.test.js', () => {
-  let app;
+describe('test/mock_context.test.ts', () => {
+  let app: MockApplication;
   before(done => {
     app = mm.app({
       baseDir: 'demo',
@@ -12,7 +13,7 @@ describe('test/mock_context.test.js', () => {
   after(() => app.close());
   afterEach(mm.restore);
 
-  it.only('should work on GET with user login', () => {
+  it('should work on GET with user login', () => {
     app.mockContext({
       user: {
         foo: 'bar',
@@ -58,7 +59,7 @@ describe('test/mock_context.test.js', () => {
       });
   });
 
-  it.skip('should work on POST file with user login', async () => {
+  it('should work on POST file with user login', async () => {
     const ctx = app.mockContext({
       user: {
         foo: 'bar',
@@ -74,13 +75,13 @@ describe('test/mock_context.test.js', () => {
     await app.httpRequest()
       .post('/file')
       .field('title', 'file title')
-      .attach('file', __filename)
+      .attach('file', getFixtures('../../package.json'))
       .expect(200)
       .expect({
         fields: {
           title: 'file title',
         },
-        filename: 'mock_context.test.js',
+        filename: 'package.json',
         user: {
           foo: 'bar',
         },
