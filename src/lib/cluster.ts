@@ -1,18 +1,20 @@
-const debug = require('util').debuglog('egg-mock:cluster');
-const path = require('path');
-const os = require('os');
-const childProcess = require('child_process');
-const Coffee = require('coffee').Coffee;
-const { Ready } = require('get-ready');
-const co = require('co');
-const awaitEvent = require('await-event');
-const supertestRequest = require('./supertest');
-const { sleep, rimrafSync } = require('./utils');
-const formatOptions = require('./format_options');
+import { debuglog } from 'node:util';
+import path from 'node:path';
+import os from 'node:os';
+import childProcess from 'node:child_process';
+import { once } from 'node:events';
+import { Coffee } from 'coffee';
+import { Ready } from 'get-ready';
+import { request as supertestRequest } from './supertest.js';
+import { sleep, rimrafSync, getSourceDirname } from './utils.js';
+import { formatOptions } from './format_options.js';
+import type { MockClusterOptions, MockClusterApplicationOptions } from './types.js';
+
+const debug = debuglog('@eggjs/mock/lib/cluster');
 
 const clusters = new Map();
-const serverBin = path.join(__dirname, 'start-cluster.js');
-const requestCallFunctionFile = path.join(__dirname, 'request_call_function.js');
+const serverBin = path.join(getSourceDirname(), 'lib/start-cluster.js');
+const requestCallFunctionFile = path.join(getSourceDirname(), 'lib/request_call_function.js');
 let masterPort = 17000;
 
 /**
@@ -40,7 +42,13 @@ let masterPort = 17000;
  *   });
  * });
  */
-class ClusterApplication extends Coffee {
+export class ClusterApplication extends Coffee {
+  [key: string | symbol]: any;
+  options: MockClusterApplicationOptions;
+  port: number;
+  baseDir: string;
+  closed: boolean;
+
   /**
    * @class
    * @param {Object} options
@@ -53,12 +61,12 @@ class ClusterApplication extends Coffee {
    * - {Object}  [opt] - opt pass to coffee, such as { execArgv: ['--debug'] }
    * ```
    */
-  constructor(options) {
+  constructor(options: MockClusterApplicationOptions) {
     const opt = options.opt;
     delete options.opt;
 
     // incremental port
-    options.port = options.port || ++masterPort;
+    options.port = options.port ?? ++masterPort;
     // Set 1 worker when test
     if (!options.workers) {
       options.workers = 1;
@@ -87,7 +95,7 @@ class ClusterApplication extends Coffee {
     }
 
     process.nextTick(() => {
-      this.proc.on('message', msg => {
+      this.proc.on('message', (msg: any) => {
         // 'egg-ready' and { action: 'egg-ready' }
         const action = msg && msg.action ? msg.action : msg;
         switch (action) {
@@ -118,7 +126,6 @@ class ClusterApplication extends Coffee {
 
   /**
    * Compatible API for supertest
-   * @return {ClusterApplication} return the instance
    */
   callback() {
     return this;
@@ -135,9 +142,6 @@ class ClusterApplication extends Coffee {
 
   /**
    * Compatible API for supertest
-   * @return {Object}
-   *  - {Number} port
-   * @private
    */
   address() {
     return {
@@ -147,8 +151,6 @@ class ClusterApplication extends Coffee {
 
   /**
    * Compatible API for supertest
-   * @return {ClusterApplication} return the instance
-   * @private
    */
   listen() {
     return this;
@@ -156,33 +158,35 @@ class ClusterApplication extends Coffee {
 
   /**
    * kill the process
-   * @return {Promise} promise
    */
-  close() {
+  async close() {
     this.closed = true;
 
     const proc = this.proc;
     const baseDir = this.baseDir;
-    return co(function* () {
-      if (proc.connected) {
-        proc.kill('SIGTERM');
-        yield awaitEvent.call(proc, 'exit');
-      }
+    if (proc.connected) {
+      proc.kill('SIGTERM');
+      await once(proc, 'exit');
+    }
 
-      clusters.delete(baseDir);
-      debug('delete cluster cache %s, remain %s', baseDir, [ ...clusters.keys() ]);
+    clusters.delete(baseDir);
+    debug('delete cluster cache %s, remain %s', baseDir, [ ...clusters.keys() ]);
 
-      /* istanbul ignore if */
-      if (os.platform() === 'win32') yield sleep(1000);
-    });
+    if (os.platform() === 'win32') {
+      await sleep(1000);
+    }
+  }
+
+  get isClosed() {
+    return this.closed;
   }
 
   // mock app.router.pathFor(name) api
   get router() {
-    const that = this;
+    const self = this;
     return {
-      pathFor(url) {
-        return that._callFunctionOnAppWorker('pathFor', [ url ], 'router', true);
+      pathFor(url: string) {
+        return self._callFunctionOnAppWorker('pathFor', [ url ], 'router', true);
       },
     };
   }
@@ -194,8 +198,8 @@ class ClusterApplication extends Coffee {
    * @param {String} [logger] - logger instance name, default is `logger`
    * @function ClusterApplication#expectLog
    */
-  mockLog(logger) {
-    logger = logger || 'logger';
+  mockLog(logger?: string) {
+    logger = logger ?? 'logger';
     this._callFunctionOnAppWorker('mockLog', [ logger ], null, true);
   }
 
@@ -207,8 +211,8 @@ class ClusterApplication extends Coffee {
    * @param {String} [logger] - logger instance name, default is `logger`
    * @function ClusterApplication#expectLog
    */
-  expectLog(str, logger) {
-    logger = logger || 'logger';
+  expectLog(str: string, logger?: string) {
+    logger = logger ?? 'logger';
     this._callFunctionOnAppWorker('expectLog', [ str, logger ], null, true);
   }
 
@@ -220,8 +224,8 @@ class ClusterApplication extends Coffee {
    * @param {String} [logger] - logger instance name, default is `logger`
    * @function ClusterApplication#notExpectLog
    */
-  notExpectLog(str, logger) {
-    logger = logger || 'logger';
+  notExpectLog(str: string, logger?: string) {
+    logger = logger ?? 'logger';
     this._callFunctionOnAppWorker('notExpectLog', [ str, logger ], null, true);
   }
 
@@ -229,7 +233,7 @@ class ClusterApplication extends Coffee {
     return supertestRequest(this);
   }
 
-  _callFunctionOnAppWorker(method, args = [], property = undefined, needResult = false) {
+  _callFunctionOnAppWorker(method: string, args: any[] = [], property: any = undefined, needResult = false) {
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
       if (typeof arg === 'function') {
@@ -238,7 +242,7 @@ class ClusterApplication extends Coffee {
           value: arg.toString(),
         };
       } else if (arg instanceof Error) {
-        const errObject = {
+        const errObject: any = {
           __egg_mock_type: 'error',
           name: arg.name,
           message: arg.message,
@@ -246,7 +250,7 @@ class ClusterApplication extends Coffee {
         };
         for (const key in arg) {
           if (key !== 'name' && key !== 'message' && key !== 'stack') {
-            errObject[key] = arg[key];
+            errObject[key] = (arg as any)[key];
           }
         }
         args[i] = errObject;
@@ -289,12 +293,12 @@ class ClusterApplication extends Coffee {
   }
 }
 
-module.exports = options => {
-  options = formatOptions(options);
+export function createCluster(initOptions?: MockClusterOptions) {
+  const options = formatOptions(initOptions) as MockClusterApplicationOptions;
   if (options.cache && clusters.has(options.baseDir)) {
     const clusterApp = clusters.get(options.baseDir);
     // return cache when it hasn't been killed
-    if (!clusterApp.closed) {
+    if (!clusterApp.isClosed) {
       return clusterApp;
     }
 
@@ -306,9 +310,14 @@ module.exports = options => {
     const logDir = path.join(options.baseDir, 'logs');
     try {
       rimrafSync(logDir);
-    } catch (err) {
-      /* istanbul ignore next */
+    } catch (err: any) {
       console.error(`remove log dir ${logDir} failed: ${err.stack}`);
+    }
+    const runDir = path.join(options.baseDir, 'run');
+    try {
+      rimrafSync(runDir);
+    } catch (err: any) {
+      console.error(`remove run dir ${runDir} failed: ${err.stack}`);
     }
   }
 
@@ -319,29 +328,29 @@ module.exports = options => {
       // proxy mockXXX function to app worker
       const method = prop;
       if (typeof method === 'string' && /^mock\w+$/.test(method) && target[method] === undefined) {
-        return function mockProxy(...args) {
+        return function mockProxy(...args: any[]) {
           return target._callFunctionOnAppWorker(method, args, null, true);
         };
       }
-
       return target[prop];
     },
   });
 
   clusters.set(options.baseDir, clusterApp);
   return clusterApp;
-};
+}
 
 // export to let mm.restore() worked
-module.exports.restore = () => {
+export async function restore() {
   for (const clusterApp of clusters.values()) {
-    clusterApp.mockRestore();
+    await clusterApp.mockRestore();
   }
-};
+}
 
 // ensure to close App process on test exit.
 process.on('exit', () => {
   for (const clusterApp of clusters.values()) {
+    debug('on exit close clusterApp, port: %s', clusterApp.port);
     clusterApp.close();
   }
 });

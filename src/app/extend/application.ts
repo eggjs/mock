@@ -64,9 +64,10 @@ export default abstract class ApplicationUnittest extends EggCore {
    * };
    * ```
    */
-  mockContext(data: MockContextData, options?: MockContextOptions) {
+  mockContext(data?: MockContextData, options?: MockContextOptions) {
+    data = data ?? {};
     function mockRequest(req: IncomingMessage) {
-      for (const key in data.headers) {
+      for (const key in data?.headers) {
         mock(req.headers, key, data.headers[key]);
         mock(req.headers, key.toLowerCase(), data.headers[key]);
       }
@@ -75,7 +76,6 @@ export default abstract class ApplicationUnittest extends EggCore {
     // try to use app.options.mockCtxStorage first
     const mockCtxStorage = this.options.mockCtxStorage ?? true;
     options = Object.assign({ mockCtxStorage }, options);
-    data = data || {};
 
     if ('_customMockContext' in this && typeof this._customMockContext === 'function') {
       this._customMockContext(data);
@@ -368,6 +368,7 @@ export default abstract class ApplicationUnittest extends EggCore {
   mockEnv(env: string) {
     mock(this.config, 'env', env);
     mock(this.config, 'serverEnv', env);
+    debug('mock env: %o', env);
     return this;
   }
 

@@ -1,5 +1,5 @@
 import { debuglog } from 'node:util';
-import mockParallelApp from './parallel/app.js';
+import { createApp as createParallelApp } from './parallel/app.js';
 import { setupAgent } from './agent_handler.js';
 import { createApp } from './app.js';
 import { restore } from './restore.js';
@@ -10,7 +10,7 @@ const debug = debuglog('@eggjs/mock/lib/app_handler');
 
 let app: Application;
 
-exports.setupApp = () => {
+export function setupApp() {
   if (app) {
     debug('return exists app');
     return app;
@@ -21,33 +21,40 @@ exports.setupApp = () => {
     process.env.ENABLE_MOCHA_PARALLEL, process.env.AUTO_AGENT);
   if (process.env.ENABLE_MOCHA_PARALLEL && process.env.AUTO_AGENT) {
     // setup agent first
-    app = mockParallelApp({
+    app = createParallelApp({
       ...options,
-      beforeInit: async _app => {
+      beforeInit: async parallelApp => {
         const agent = await setupAgent();
-        _app.options.clusterPort = agent.options.clusterPort;
-        debug('mockParallelApp beforeInit get clusterPort: %s', _app.options.clusterPort);
+        parallelApp.options.clusterPort = agent.options.clusterPort;
+        debug('mockParallelApp beforeInit get clusterPort: %s', parallelApp.options.clusterPort);
       },
     });
     debug('mockParallelApp app: %s', !!app);
   } else {
     app = createApp(options);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     if (typeof beforeAll === 'function') {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       // jest
       beforeAll(() => app.ready());
+    }
+    if (typeof afterEach === 'function') {
+      // mocha and jest
       afterEach(() => app.backgroundTasksFinished());
       afterEach(restore);
     }
   }
-};
+}
 
-let getAppCallback;
+let getAppCallback: (suite: unknown, test?: unknown) => any;
 
-exports.setGetAppCallback = cb => {
+export function setGetAppCallback(cb: (suite: unknown, test?: unknown) => any) {
   getAppCallback = cb;
-};
+}
 
-exports.getApp = async (suite, test) => {
+export async function getApp(suite?: unknown, test?: unknown) {
   if (getAppCallback) {
     return getAppCallback(suite, test);
   }
@@ -55,8 +62,8 @@ exports.getApp = async (suite, test) => {
     await app.ready();
   }
   return app;
-};
+}
 
-exports.getBootstrapApp = () => {
+export function getBootstrapApp() {
   return app;
-};
+}

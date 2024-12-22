@@ -1,25 +1,22 @@
-const debug = require('util').debuglog('egg-mock:lib:parallel:util');
-const ConsoleLogger = require('egg-logger').EggConsoleLogger;
-const { getProperty } = require('../utils');
+import { debuglog } from 'node:util';
+import { getProperty } from '../utils.js';
 
-const consoleLogger = new ConsoleLogger({ level: 'INFO' });
-const MOCK_APP_METHOD = [
+const debug = debuglog('@eggjs/mock/lib/parallel/util');
+
+export const MOCK_APP_METHOD = [
   'ready',
+  'isClosed',
   'closed',
   'close',
   'on',
   'once',
 ];
 
-const INIT = Symbol('init');
-const APP_INIT = Symbol('appInit');
-const BIND_EVENT = Symbol('bindEvent');
-const INIT_ON_LISTENER = Symbol('initOnListener');
-const INIT_ONCE_LISTENER = Symbol('initOnceListener');
+export const APP_INIT = Symbol('appInit');
 
-function proxyApp(app) {
+export function proxyApp(app: any) {
   const proxyApp = new Proxy(app, {
-    get(target, prop) {
+    get(target, prop: string) {
       // don't delegate properties on MockAgent
       if (MOCK_APP_METHOD.includes(prop)) {
         return getProperty(target, prop);
@@ -30,14 +27,14 @@ function proxyApp(app) {
       debug('proxy handler.get %s', prop);
       return target._instance[prop];
     },
-    set(target, prop, value) {
+    set(target, prop: string, value) {
       if (MOCK_APP_METHOD.includes(prop)) return true;
       if (!target[APP_INIT]) throw new Error(`can't set ${prop} before ready`);
       debug('proxy handler.set %s', prop);
       target._instance[prop] = value;
       return true;
     },
-    defineProperty(target, prop, descriptor) {
+    defineProperty(target, prop: string, descriptor) {
       // can't define properties on MockAgent
       if (MOCK_APP_METHOD.includes(prop)) return true;
       if (!target[APP_INIT]) throw new Error(`can't defineProperty ${prop} before ready`);
@@ -45,7 +42,7 @@ function proxyApp(app) {
       Object.defineProperty(target._instance, prop, descriptor);
       return true;
     },
-    deleteProperty(target, prop) {
+    deleteProperty(target, prop: string) {
       // can't delete properties on MockAgent
       if (MOCK_APP_METHOD.includes(prop)) return true;
       if (!target[APP_INIT]) throw new Error(`can't delete ${prop} before ready`);
@@ -53,7 +50,7 @@ function proxyApp(app) {
       delete target._instance[prop];
       return true;
     },
-    getOwnPropertyDescriptor(target, prop) {
+    getOwnPropertyDescriptor(target, prop: string) {
       if (MOCK_APP_METHOD.includes(prop)) return Object.getOwnPropertyDescriptor(target, prop);
       if (!target[APP_INIT]) throw new Error(`can't getOwnPropertyDescriptor ${prop} before ready`);
       debug('proxy handler.getOwnPropertyDescriptor %s', prop);
@@ -67,14 +64,3 @@ function proxyApp(app) {
   });
   return proxyApp;
 }
-
-module.exports = {
-  MOCK_APP_METHOD,
-  INIT,
-  APP_INIT,
-  BIND_EVENT,
-  INIT_ON_LISTENER,
-  INIT_ONCE_LISTENER,
-  proxyApp,
-  consoleLogger,
-};

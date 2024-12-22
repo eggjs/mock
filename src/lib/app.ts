@@ -12,7 +12,7 @@ import { setCustomLoader } from './mock_custom_loader.js';
 import { createServer } from './mock_http_server.js';
 import type { MockOptions, MockApplicationOptions } from './types.js';
 
-const debug = debuglog('egg-mock:lib:app');
+const debug = debuglog('@eggjs/mock/lib/app');
 
 const apps = new Map();
 const APP_INIT = Symbol('appInit');
@@ -33,10 +33,9 @@ export class MockApplication extends Base {
   _app: Application;
   declare options: MockApplicationOptions;
   baseDir: string;
-  closed = false;
   [APP_INIT] = false;
-  #initOnListeners = new Set<any[]>();
-  #initOnceListeners = new Set<any[]>();
+  _initOnListeners: Set<any[]>;
+  _initOnceListeners: Set<any[]>;
 
   constructor(options: MockApplicationOptions) {
     super({
@@ -44,8 +43,8 @@ export class MockApplication extends Base {
       ...options,
     });
     this.baseDir = options.baseDir;
-    // listen once, otherwise will throw exception when emit error without listener
-    // this.once('error', () => {});
+    this._initOnListeners = new Set();
+    this._initOnceListeners = new Set();
   }
 
   async _init() {
@@ -105,12 +104,12 @@ export class MockApplication extends Base {
   }
 
   #bindEvent() {
-    for (const args of this.#initOnListeners) {
+    for (const args of this._initOnListeners) {
       debug('on(%s), use cache and pass to app', args);
       this._app.on(args[0], args[1]);
       this.removeListener(args[0], args[1]);
     }
-    for (const args of this.#initOnceListeners) {
+    for (const args of this._initOnceListeners) {
       debug('once(%s), use cache and pass to app', args);
       this._app.on(args[0], args[1]);
       this.removeListener(args[0], args[1]);
@@ -123,7 +122,8 @@ export class MockApplication extends Base {
       this._app.on(args[0], args[1]);
     } else {
       debug('on(%s), cache it because app has not init', args);
-      this.#initOnListeners.add(args);
+      console.error('on', this._initOnListeners, this);
+      this._initOnListeners.add(args);
       super.on(args[0], args[1]);
     }
     return this;
@@ -135,7 +135,7 @@ export class MockApplication extends Base {
       this._app.once(args[0], args[1]);
     } else {
       debug('once(%s), cache it because app has not init', args);
-      this.#initOnceListeners.add(args);
+      this._initOnceListeners.add(args);
       super.once(args[0], args[1]);
     }
     return this;
@@ -143,21 +143,18 @@ export class MockApplication extends Base {
 
   /**
    * close app
-   * @return {Promise} promise
    */
-  async close(): Promise<void> {
-    this.closed = true;
-    const self = this;
+  async _close() {
     const baseDir = this.baseDir;
-    if (self._app) {
-      await self._app.close();
+    if (this._app) {
+      await this._app.close();
     } else {
       // when app init throws an exception, must wait for app quit gracefully
       await sleep(200);
     }
 
-    if (self._agent) {
-      await self._agent.close();
+    if (this._agent) {
+      await this._agent.close();
     }
 
     apps.delete(baseDir);
@@ -169,12 +166,13 @@ export class MockApplication extends Base {
   }
 }
 
-export function createApp(createOptions: MockOptions) {
+export function createApp(createOptions?: MockOptions) {
   const options = formatOptions(createOptions);
   if (options.cache && apps.has(options.baseDir)) {
     const app = apps.get(options.baseDir);
     // return cache when it hasn't been killed
-    if (!app.closed) {
+    if (!app.isClosed) {
+      debug('use cache app %s', options.baseDir);
       return app;
     }
     // delete the cache when it's closed

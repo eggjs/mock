@@ -1,6 +1,6 @@
 import { debuglog } from 'node:util';
 import path from 'node:path';
-import mm from 'mm';
+import { mm, isMocked } from 'mm';
 import { getFrameworkPath } from '@eggjs/utils';
 import { readJSONSync } from 'utility';
 import { MockOptions, MockApplicationOptions } from './types.js';
@@ -11,7 +11,7 @@ const debug = debuglog('@eggjs/mock/lib/format_options');
 /**
  * format the options
  */
-export function formatOptions(initOptions: MockOptions) {
+export function formatOptions(initOptions?: MockOptions) {
   const options = {
     baseDir: process.cwd(),
     cache: true,
@@ -30,7 +30,7 @@ export function formatOptions(initOptions: MockOptions) {
 
   let framework = options.framework ?? options.customEgg;
   // test for framework
-  if (initOptions.framework === true) {
+  if (initOptions?.framework === true) {
     framework = process.cwd();
     // disable plugin test when framework test
     options.plugin = false;
@@ -67,7 +67,7 @@ export function formatOptions(initOptions: MockOptions) {
 
   // mock HOME as baseDir, but ignore if it has been mocked
   const env = process.env.EGG_SERVER_ENV;
-  if (!mm.isMocked(process.env, 'HOME') &&
+  if (!isMocked(process.env, 'HOME') &&
     (env === 'default' || env === 'test' || env === 'prod')) {
     mm(process.env, 'HOME', options.baseDir);
   }

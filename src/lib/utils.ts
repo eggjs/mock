@@ -25,7 +25,7 @@ export function rimrafSync(filepath: string) {
   rmSync(filepath, { force: true, recursive: true });
 }
 
-export function getProperty(target: any, prop: string) {
+export function getProperty(target: any, prop: PropertyKey) {
   const member = target[prop];
   if (typeof member === 'function') {
     return member.bind(target);
@@ -41,42 +41,42 @@ export function getEggOptions() {
   return options;
 }
 
-const hasOwnProperty = Object.prototype.hasOwnProperty;
+// const hasOwnProperty = Object.prototype.hasOwnProperty;
 
-/**
- * Merge the property descriptors of `src` into `dest`
- *
- * @param {object} dest Object to add descriptors to
- * @param {object} src Object to clone descriptors from
- * @param {boolean} [redefine=true] Redefine `dest` properties with `src` properties
- * @return {object} Reference to dest
- * @public
- */
+// /**
+//  * Merge the property descriptors of `src` into `dest`
+//  *
+//  * @param {object} dest Object to add descriptors to
+//  * @param {object} src Object to clone descriptors from
+//  * @param {boolean} [redefine=true] Redefine `dest` properties with `src` properties
+//  * @return {object} Reference to dest
+//  * @public
+//  */
 
-function merge(dest, src, redefine) {
-  if (!dest) {
-    throw new TypeError('argument dest is required');
-  }
+// function merge(dest, src, redefine) {
+//   if (!dest) {
+//     throw new TypeError('argument dest is required');
+//   }
 
-  if (!src) {
-    throw new TypeError('argument src is required');
-  }
+//   if (!src) {
+//     throw new TypeError('argument src is required');
+//   }
 
-  if (redefine === undefined) {
-    // Default to true
-    redefine = true;
-  }
+//   if (redefine === undefined) {
+//     // Default to true
+//     redefine = true;
+//   }
 
-  Object.getOwnPropertyNames(src).forEach(function forEachOwnPropertyName(name) {
-    if (!redefine && hasOwnProperty.call(dest, name)) {
-      // Skip descriptor
-      return;
-    }
+//   Object.getOwnPropertyNames(src).forEach(function forEachOwnPropertyName(name) {
+//     if (!redefine && hasOwnProperty.call(dest, name)) {
+//       // Skip descriptor
+//       return;
+//     }
 
-    // Copy descriptor
-    const descriptor = Object.getOwnPropertyDescriptor(src, name);
-    Object.defineProperty(dest, name, descriptor);
-  });
+//     // Copy descriptor
+//     const descriptor = Object.getOwnPropertyDescriptor(src, name);
+//     Object.defineProperty(dest, name, descriptor);
+//   });
 
-  return dest;
-}
+//   return dest;
+// }

@@ -1,14 +1,13 @@
-const path = require('node:path');
-const { strict: assert } = require('node:assert');
-const mm = require('..');
+import { strict as assert } from 'node:assert';
+import { scheduler } from 'node:timers/promises';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
 
-const fixtures = path.join(__dirname, 'fixtures');
-
-describe('test/mock_env.test.js', () => {
-  let app;
+describe('test/mock_env.test.ts', () => {
+  let app: MockApplication;
   before(() => {
     app = mm.app({
-      baseDir: path.join(fixtures, 'demo'),
+      baseDir: getFixtures('demo'),
     });
     return app.ready();
   });
@@ -16,6 +15,8 @@ describe('test/mock_env.test.js', () => {
   afterEach(mm.restore);
 
   it('should mock env success', () => {
+    assert.equal(app.config.env, 'unittest');
+    assert.equal(app.config.serverEnv, undefined);
     app.mockEnv('prod');
     assert.equal(app.config.env, 'prod');
     assert.equal(app.config.serverEnv, 'prod');
@@ -30,18 +31,14 @@ describe('test/mock_env.test.js', () => {
     assert.equal(app.config.env, 'prod');
     assert.equal(app.config.serverEnv, 'prod');
 
-    await sleep(1);
+    await scheduler.wait(1);
     assert.equal(app.config.env, 'prod');
     assert.equal(app.config.serverEnv, 'prod');
 
+    // sync restore should work
     mm.restore();
     assert.equal(app.config.env, 'unittest');
     assert.equal(app.config.serverEnv, undefined);
   });
 });
 
-function sleep(ms) {
-  return new Promise(resolve => {
-    setTimeout(resolve, ms);
-  });
-}

@@ -1,31 +1,33 @@
-const debug = require('util').debuglog('egg-mock:register');
-const mock = require('./index').default;
-const agentHandler = require('./lib/agent_handler');
-const appHandler = require('./lib/app_handler');
-const injectContext = require('./lib/inject_context');
+import { debuglog } from 'node:util';
+import { mock } from './index.js';
+import { setupAgent, closeAgent } from './lib/agent_handler.js';
+import { getApp } from './lib/app_handler.js';
+import { injectContext } from './lib/inject_context.js';
 
-exports.mochaGlobalSetup = async () => {
+const debug = debuglog('@eggjs/mock/register');
+
+export async function mochaGlobalSetup() {
   debug('mochaGlobalSetup, agent.setupAgent() start');
-  await agentHandler.setupAgent();
+  await setupAgent();
   debug('mochaGlobalSetup, agent.setupAgent() end');
-};
+}
 
-exports.mochaGlobalTeardown = async () => {
+export async function mochaGlobalTeardown() {
   debug('mochaGlobalTeardown, agent.closeAgent() start');
-  await agentHandler.closeAgent();
+  await closeAgent();
   debug('mochaGlobalTeardown, agent.closeAgent() end');
-};
+}
 
-exports.mochaHooks = {
+export const mochaHooks = {
   async beforeAll() {
-    const app = await appHandler.getApp();
+    const app = await getApp();
     debug('mochaHooks.beforeAll call, _app: %s', app);
     if (app) {
       await app.ready();
     }
   },
   async afterEach() {
-    const app = await appHandler.getApp();
+    const app = await getApp();
     debug('mochaHooks.afterEach call, _app: %s', app);
     if (app) {
       await app.backgroundTasksFinished();
@@ -35,7 +37,7 @@ exports.mochaHooks = {
   async afterAll() {
     // skip auto app close on parallel
     if (process.env.ENABLE_MOCHA_PARALLEL) return;
-    const app = await appHandler.getApp();
+    const app = await getApp();
     debug('mochaHooks.afterAll call, _app: %s', app);
     if (app) {
       await app.close();
@@ -45,11 +47,9 @@ exports.mochaHooks = {
 
 /**
  * Find active node mocha instances.
- *
- * @return {Array}
  */
 function findNodeJSMocha() {
-  const children = require.cache || {};
+  const children: any = require.cache || {};
 
   return Object.keys(children)
     .filter(function(child) {
@@ -61,7 +61,8 @@ function findNodeJSMocha() {
     });
 }
 
-require('mocha');
+import 'mocha';
+
 const modules = findNodeJSMocha();
 
 for (const module of modules) {

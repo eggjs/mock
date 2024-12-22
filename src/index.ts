@@ -1,9 +1,10 @@
-import mm from 'mm';
-import cluster from './lib/cluster.js';
-import app from './lib/app.js';
-import mockAgent from './lib/mock_agent.js';
+import { mm } from 'mm';
+import { createCluster } from './lib/cluster.js';
+import { createApp } from './lib/app.js';
+// import { getMockAgent } from './lib/mock_agent.js';
 import { restore } from './lib/restore.js';
 import { setGetAppCallback } from './lib/app_handler.js';
+import ApplicationUnittest from './app/extend/application.js';
 
 // egg-bin will set this flag to require files for instrument
 // if (process.env.EGG_BIN_PREREQUIRE) {
@@ -28,17 +29,17 @@ const mock = {
    * @return {App} return {@link Application}
    * @example
    * ```js
-   * var app = mm.app();
+   * const app = mm.app();
    * ```
    */
-  app,
+  app: createApp,
 
   /**
    * Create a egg mocked cluster application
    * @function mm#cluster
    * @see ClusterApplication
    */
-  cluster,
+  cluster: createCluster,
 
   /**
    * mock the serverEnv of Egg
@@ -74,6 +75,7 @@ export {
   mock,
   // alias to mm
   mock as mm,
+  ApplicationUnittest as MockApplication,
 };
 
 process.setMaxListeners(100);

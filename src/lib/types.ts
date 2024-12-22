@@ -35,7 +35,7 @@ export interface MockOptions {
   coverage?: boolean;
 
   /**
-   * Remove $baseDir/logs
+   * Remove $baseDir/logs and $baseDir/run before start, default is `true`
    */
   clean?: boolean;
 
@@ -47,8 +47,24 @@ export interface MockOptions {
   beforeInit?: (app: any) => Promise<void>;
 }
 
+export interface MockClusterOptions extends MockOptions {
+  workers?: number | string;
+  cache?: boolean;
+  port?: number;
+  /**
+   * opt pass to coffee, such as { execArgv: ['--debug'] }
+   */
+  opt?: object;
+}
+
 export interface MockApplicationOptions extends MockOptions {
   baseDir: string;
   framework: string;
   clusterPort?: number;
+}
+
+export interface MockClusterApplicationOptions extends MockClusterOptions {
+  baseDir: string;
+  framework: string;
+  port: number;
 }

@@ -1,14 +1,17 @@
-const assert = require('assert');
-const debug = require('util').debuglog('egg-mock:inject_context');
+import { debuglog } from 'node:util';
+import assert from 'node:assert';
+import { getApp } from './app_handler.js';
+
 const MOCHA_SUITE_APP = Symbol.for('mocha#suite#app');
-const appHandler = require('./app_handler');
+
+const debug = debuglog('@eggjs/mock/lib/inject_context');
 
 /**
  * Monkey patch the mocha instance with egg context.
  *
- * @param {Function} mocha -
+ * @param {Function} mocha - the module of mocha
  */
-function injectContext(mocha) {
+export function injectContext(mocha: any) {
   if (!mocha || mocha._injectContextLoaded) {
     return;
   }
@@ -17,7 +20,7 @@ function injectContext(mocha) {
   const runSuite = Runner.prototype.runSuite;
   const runTests = Runner.prototype.runTests;
 
-  function getTestTitle(suite, test) {
+  function getTestTitle(suite: any, test: any) {
     const suiteTitle = suite.root ? 'root suite' : suite.title;
     if (!test) {
       return `"${suiteTitle}"`;
@@ -26,12 +29,12 @@ function injectContext(mocha) {
   }
 
   // Inject ctx for before/after.
-  Runner.prototype.runSuite = async function(suite, fn) {
+  Runner.prototype.runSuite = async function(suite: any, fn: any) {
     debug('run suite: %s', suite.title);
     let app;
     const self = this;
     try {
-      app = await appHandler.getApp(suite);
+      app = await getApp(suite);
       debug('get app: %s', !!app);
       await app.ready();
     } catch {
@@ -48,8 +51,8 @@ function injectContext(mocha) {
       suite.ctx[MOCHA_SUITE_APP] = app;
       const mockContextFun = app.mockModuleContextScope || app.mockContextScope;
       await mockContextFun.call(app, async function() {
-        await new Promise(resolve => {
-          runSuite.call(self, suite, aErrSuite => {
+        await new Promise<void>(resolve => {
+          runSuite.call(self, suite, (aErrSuite: Error) => {
             errSuite = aErrSuite;
             resolve();
           });
@@ -61,7 +64,7 @@ function injectContext(mocha) {
       suite.beforeAll('egg-mock-mock-ctx-failed', async () => {
         throw err;
       });
-      return runSuite.call(self, suite, aErrSuite => {
+      return runSuite.call(self, suite, (aErrSuite: Error) => {
         return fn(aErrSuite);
       });
     }
@@ -70,7 +73,7 @@ function injectContext(mocha) {
 
   // Inject ctx for beforeEach/it/afterEach.
   // And ctx with before/after is not same as beforeEach/it/afterEach.
-  Runner.prototype.runTests = async function(suite, fn) {
+  Runner.prototype.runTests = async function(suite: any, fn: any) {
     const tests = suite.tests.slice();
     if (!tests.length) {
       return runTests.call(this, suite, fn);
@@ -83,12 +86,12 @@ function injectContext(mocha) {
       return runTests.call(self, suite, fn);
     }
 
-    function done(errSuite) {
+    function done(errSuite?: Error) {
       suite.tests = tests;
       return fn(errSuite);
     }
 
-    async function next(i) {
+    async function next(i: number) {
       const test = tests[i];
       if (!test) {
         return done();
@@ -97,7 +100,7 @@ function injectContext(mocha) {
 
       let app;
       try {
-        app = await appHandler.getApp(suite, test);
+        app = await getApp(suite, test);
         assert(app, `not found app for test ${getTestTitle(suite, test)}`);
         await app.ready();
       } catch (err) {
@@ -108,7 +111,7 @@ function injectContext(mocha) {
       try {
         const mockContextFun = app.mockModuleContextScope || app.mockContextScope;
         await mockContextFun.call(app, async function() {
-          return await new Promise(resolve => {
+          return await new Promise<void>(resolve => {
             runTests.call(self, suite, () => {
               return resolve();
             });
@@ -128,5 +131,3 @@ function injectContext(mocha) {
 
   mocha._injectContextLoaded = true;
 }
-
-module.exports = injectContext;

@@ -81,9 +81,9 @@ describe('test/app_proxy.test.js', () => {
     });
 
     it('should ignore when get property on MockApplication', function* () {
-      assert(app.closed === false);
+      assert(app.isClosed === false);
       yield app.close();
-      assert(app.closed === true);
+      assert(app.isClosed === true);
     });
   });
 
@@ -107,8 +107,8 @@ describe('test/app_proxy.test.js', () => {
     });
 
     it('should ignore when set property on MockApplication', function* () {
-      app.closed = true;
-      assert(app.closed === false);
+      app.isClosed = true;
+      assert(app.isClosed === false);
       yield app.close();
     });
   });
@@ -149,12 +149,12 @@ describe('test/app_proxy.test.js', () => {
     });
 
     it('should ignore when defineProperty on MockApplication', function* () {
-      assert(app.closed === false);
-      Object.defineProperty(app, 'closed', {
+      assert(app.isClosed === false);
+      Object.defineProperty(app, 'isClosed', {
         value: true,
       });
-      assert(app.closed === false);
-      assert(!app._app.closed);
+      assert(app.isClosed === false);
+      assert(!app._app.closed && !app._app.isClosed);
     });
   });
 
@@ -177,10 +177,10 @@ describe('test/app_proxy.test.js', () => {
 
     it('should ignore when delete property on MockApplication', function* () {
       assert(!app._app.closed);
-      assert(app.closed === false);
-      delete app.closed;
+      assert(app.isClosed === false);
+      delete app.isClosed;
       assert(!app._app.closed);
-      assert(app.closed === false);
+      assert(app.isClosed === false);
     });
   });
 

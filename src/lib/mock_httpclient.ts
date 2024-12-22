@@ -1,5 +1,5 @@
 import { mm } from 'mm';
-import extend from 'extend2';
+import { extend } from 'extend2';
 import { getMockAgent } from './mock_agent.js';
 
 export interface MockResultOptions {
