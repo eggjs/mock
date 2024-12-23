@@ -59,6 +59,12 @@ export interface MockClusterOptions extends MockOptions {
   opt?: object;
 }
 
+/**
+ * @deprecated please use MockOptions instead
+ * keep this for compatible
+ */
+export type MockOption = MockOptions;
+
 export interface MockApplicationOptions extends MockOptions {
   baseDir: string;
   framework: string;

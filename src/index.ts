@@ -7,6 +7,8 @@ import { restore } from './lib/restore.js';
 import { setGetAppCallback } from './lib/app_handler.js';
 import ApplicationUnittest from './app/extend/application.js';
 
+export * from './lib/types.js';
+
 // egg-bin will set this flag to require files for instrument
 // if (process.env.EGG_BIN_PREREQUIRE) {
 //   require('./lib/prerequire');
