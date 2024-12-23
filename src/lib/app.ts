@@ -21,6 +21,7 @@ const MESSENGER = Symbol('messenger');
 const MOCK_APP_METHOD = [
   'ready',
   'closed',
+  'isClosed',
   'close',
   '_agent',
   '_app',
@@ -117,6 +118,7 @@ export class MockApplication extends Base {
   }
 
   #bindEvent() {
+    debug('bind cache events to app');
     for (const args of this._initOnListeners) {
       debug('on(%s), use cache and pass to app', args);
       this._app.on(args[0], args[1]);
@@ -124,7 +126,7 @@ export class MockApplication extends Base {
     }
     for (const args of this._initOnceListeners) {
       debug('once(%s), use cache and pass to app', args);
-      this._app.on(args[0], args[1]);
+      this._app.once(args[0], args[1]);
       this.removeListener(args[0], args[1]);
     }
   }
@@ -148,7 +150,8 @@ export class MockApplication extends Base {
     } else {
       debug('once(%s), cache it because app has not init', args);
       this._initOnceListeners.add(args);
-      super.once(args[0], args[1]);
+      // maybe some edge case bug here
+      super.on(args[0], args[1]);
     }
     return this;
   }
@@ -175,6 +178,13 @@ export class MockApplication extends Base {
     if (os.platform() === 'win32') {
       await sleep(1000);
     }
+  }
+
+  /**
+   * @deprecated please use isClosed instead, keep compatible with old version
+   */
+  get closed() {
+    return this.isClosed;
   }
 }
 

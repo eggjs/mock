@@ -73,13 +73,14 @@ export class MockAgent extends Base {
   }
 
   #bindEvents() {
+    debug('bind cache events to agent');
     for (const args of this.#initOnListeners) {
-      debug('on(%s), use cache and pass to app', args);
+      debug('on(%s), use cache and pass to agent', args);
       this._instance.on(args[0], args[1]);
       this.removeListener(args[0], args[1]);
     }
     for (const args of this.#initOnceListeners) {
-      debug('once(%s), use cache and pass to app', args);
+      debug('once(%s), use cache and pass to agent', args);
       this._instance.once(args[0], args[1]);
       this.removeListener(args[0], args[1]);
     }
@@ -87,13 +88,11 @@ export class MockAgent extends Base {
 
   on(...args: any[]) {
     if (this[APP_INIT]) {
-      debug('on(%s), pass to app', args);
+      debug('on(%s), pass to agent', args);
       this._instance.on(args[0], args[1]);
     } else {
-      debug('on(%s), cache it because app has not init', args);
-      if (this.#initOnListeners) {
-        this.#initOnListeners.add(args);
-      }
+      debug('on(%s), cache it because agent has not init', args);
+      this.#initOnListeners.add(args);
       super.on(args[0], args[1]);
     }
     return this;
@@ -101,26 +100,24 @@ export class MockAgent extends Base {
 
   once(...args: any[]) {
     if (this[APP_INIT]) {
-      debug('once(%s), pass to app', args);
+      debug('once(%s), pass to agent', args);
       this._instance.once(args[0], args[1]);
     } else {
-      debug('once(%s), cache it because app has not init', args);
-      if (this.#initOnceListeners) {
-        this.#initOnceListeners.add(args);
-      }
+      debug('once(%s), cache it because agent has not init', args);
+      this.#initOnceListeners.add(args);
       super.on(args[0], args[1]);
     }
     return this;
   }
 
   /**
-   * close app
+   * close agent
    */
   async _close() {
     if (this._instance) {
       await this._instance.close();
     } else {
-      // when app init throws an exception, must wait for app quit gracefully
+      // when agent init throws an exception, must wait for agent quit gracefully
       await sleep(200);
     }
   }

@@ -28,6 +28,21 @@ export default () => {
       return;
     }
     if (property) {
+      // method: '__getter__' and property: 'config'
+      if (method === '__getter__') {
+        if (!ctx.app[property]) {
+          debug('property %s not exists on app', property);
+          ctx.status = 422;
+          ctx.body = {
+            success: false,
+            error: `property "${property}" not exists on app`,
+          };
+          return;
+        }
+        ctx.body = { success: true, result: ctx.app[property] };
+        return;
+      }
+
       if (!ctx.app[property] || typeof (ctx.app as any)[property][method] !== 'function') {
         debug('property %s.%s not exists on app', property, method);
         ctx.status = 422;

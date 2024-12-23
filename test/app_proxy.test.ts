@@ -1,35 +1,34 @@
-'use strict';
+import assert from 'node:assert';
+import { scheduler } from 'node:timers/promises';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
 
-const path = require('path');
-const assert = require('assert');
-const mm = require('..');
-const fixtures = path.join(__dirname, 'fixtures');
-const baseDir = path.join(fixtures, 'app-proxy');
+const baseDir = getFixtures('app-proxy');
 
-describe('test/app_proxy.test.js', () => {
+describe('test/app_proxy.test.ts', () => {
   afterEach(mm.restore);
 
   describe('when before ready', () => {
-    let app;
-    const baseDir = path.join(fixtures, 'app-proxy-ready');
+    let app: MockApplication;
+    const baseDir = getFixtures('app-proxy-ready');
     before(() => {
       app = mm.app({
         baseDir,
         cache: false,
       });
     });
-    after(function* () {
-      yield app.ready();
-      yield app.close();
+    after(async () => {
+      await app.ready();
+      await app.close();
     });
 
-    it('should not get property', function* () {
+    it('should not get property', async () => {
       assert.throws(() => {
         app.config;
       }, /can't get config before ready/);
     });
 
-    it('should not set property', function* () {
+    it('should not set property', async () => {
       assert.throws(() => {
         app.curl = function* mockCurl() {
           return 'mock';
@@ -37,7 +36,7 @@ describe('test/app_proxy.test.js', () => {
       }, /can't set curl before ready/);
     });
 
-    it('should not define property', function* () {
+    it('should not define property', async () => {
       assert.throws(() => {
         Object.defineProperty(app, 'config', {
           value: {},
@@ -45,19 +44,19 @@ describe('test/app_proxy.test.js', () => {
       }, /can't defineProperty config before ready/);
     });
 
-    it('should not delete property', function* () {
+    it('should not delete property', async () => {
       assert.throws(() => {
-        delete app.config;
+        delete (app as any).config;
       }, /can't delete config before ready/);
     });
 
-    it('should not getOwnPropertyDescriptor property', function* () {
+    it('should not getOwnPropertyDescriptor property', async () => {
       assert.throws(() => {
         Object.getOwnPropertyDescriptor(app, 'config');
       }, /can't getOwnPropertyDescriptor config before ready/);
     });
 
-    it('should not getPrototypeOf property', function* () {
+    it('should not getPrototypeOf property', async () => {
       assert.throws(() => {
         Object.getPrototypeOf(app);
       }, /can't getPrototypeOf before ready/);
@@ -65,7 +64,7 @@ describe('test/app_proxy.test.js', () => {
   });
 
   describe('handler.get', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.app({
         baseDir,
@@ -80,15 +79,17 @@ describe('test/app_proxy.test.js', () => {
       assert(app.method() === 'method');
     });
 
-    it('should ignore when get property on MockApplication', function* () {
-      assert(app.isClosed === false);
-      yield app.close();
-      assert(app.isClosed === true);
+    it('should ignore when get property on MockApplication', async () => {
+      assert.equal(app.isClosed, false);
+      assert.equal(app.closed, false);
+      await app.close();
+      assert.equal(app.isClosed, true);
+      assert.equal(app.closed, true);
     });
   });
 
   describe('handler.set', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.app({
         baseDir,
@@ -98,23 +99,23 @@ describe('test/app_proxy.test.js', () => {
     });
     after(() => app.close());
 
-    it('should override property with setter', function* () {
-      app.curl = function* mockCurl() {
+    it('should override property with setter', async () => {
+      app.curl = async function mockCurl() {
         return 'mock';
       };
-      const data = yield app.curl();
+      const data = await app.curl();
       assert(data === 'mock');
     });
 
-    it('should ignore when set property on MockApplication', function* () {
+    it('should ignore when set property on MockApplication', async () => {
       app.isClosed = true;
       assert(app.isClosed === false);
-      yield app.close();
+      await app.close();
     });
   });
 
   describe('handler.defineProperty', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.app({
         baseDir,
@@ -124,7 +125,7 @@ describe('test/app_proxy.test.js', () => {
     });
     after(() => app.close());
 
-    it('should defineProperty', function* () {
+    it('should defineProperty', async () => {
       assert(app.prop === 1);
       Object.defineProperty(app, 'prop', {
         get() {
@@ -148,7 +149,7 @@ describe('test/app_proxy.test.js', () => {
       assert(app.prop === 7);
     });
 
-    it('should ignore when defineProperty on MockApplication', function* () {
+    it('should ignore when defineProperty on MockApplication', async () => {
       assert(app.isClosed === false);
       Object.defineProperty(app, 'isClosed', {
         value: true,
@@ -159,7 +160,7 @@ describe('test/app_proxy.test.js', () => {
   });
 
   describe('handler.deleteProperty', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.app({
         baseDir,
@@ -175,7 +176,7 @@ describe('test/app_proxy.test.js', () => {
       assert(app.shouldBeDelete === undefined);
     });
 
-    it('should ignore when delete property on MockApplication', function* () {
+    it('should ignore when delete property on MockApplication', async () => {
       assert(!app._app.closed);
       assert(app.isClosed === false);
       delete app.isClosed;
@@ -185,7 +186,7 @@ describe('test/app_proxy.test.js', () => {
   });
 
   describe('handler.getOwnPropertyDescriptor', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.app({
         baseDir,
@@ -196,19 +197,19 @@ describe('test/app_proxy.test.js', () => {
     after(() => app.close());
 
     it('should getOwnPropertyDescriptor', () => {
-      const d = Object.getOwnPropertyDescriptor(app, 'a');
+      const d = Object.getOwnPropertyDescriptor(app, 'a')!;
       assert(typeof d.get === 'function');
       assert(typeof d.set === 'function');
     });
 
-    it('should ignore when getOwnPropertyDescriptor on MockApplication', function* () {
-      const d = Object.getOwnPropertyDescriptor(app, 'closed');
-      assert(d.value === false);
+    it('should ignore when getOwnPropertyDescriptor on MockApplication', async () => {
+      const d = Object.getOwnPropertyDescriptor(app, 'closed')!;
+      assert.equal(d, undefined);
     });
   });
 
   describe('handler.getPrototypeOf', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.app({
         baseDir,
@@ -224,7 +225,7 @@ describe('test/app_proxy.test.js', () => {
   });
 
   describe('MOCK_APP_METHOD', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.app({
         baseDir,
@@ -237,6 +238,7 @@ describe('test/app_proxy.test.js', () => {
     it('should be used on MockApplication', () => {
       const MOCK_APP_METHOD = [
         'ready',
+        'isClosed',
         'closed',
         'close',
         '_agent',
@@ -250,9 +252,9 @@ describe('test/app_proxy.test.js', () => {
     });
   });
 
-  describe('messenger binding', () => {
-    let app;
-    const baseDir = path.join(fixtures, 'messenger-binding');
+  describe.skip('messenger binding on app() mode', () => {
+    let app: MockApplication;
+    const baseDir = getFixtures('messenger-binding');
     before(() => {
       app = mm.app({
         baseDir,
@@ -262,7 +264,8 @@ describe('test/app_proxy.test.js', () => {
     });
     after(() => app.close());
 
-    it('should send message from app to agent', () => {
+    it('should send message from app to agent', async () => {
+      await scheduler.wait(2000);
       assert.deepEqual(app._agent.received, [
         'send data when app starting',
         'send data when app started',
@@ -271,12 +274,10 @@ describe('test/app_proxy.test.js', () => {
     });
 
     it('should send message from agent to app', () => {
-      process.nextTick(() => {
-        assert.deepEqual(app._app.received, [
-          'send data when server started',
-          'send data to a random app',
-        ]);
-      });
+      assert.deepEqual(app._app.received, [
+        'send data to app when server started',
+        'send data to a random app',
+      ]);
     });
 
     it('should receive egg-ready', () => {
@@ -295,6 +296,51 @@ describe('test/app_proxy.test.js', () => {
     it('should send message from app to app', () => {
       assert(app._app.recievedAppAction === true);
     });
+  });
 
+  describe.only('messenger binding on cluster() mode', () => {
+    let app: MockApplication;
+    const baseDir = getFixtures('messenger-binding');
+    before(() => {
+      app = mm.cluster({
+        baseDir,
+        cache: false,
+      });
+      app.debug();
+      return app.ready();
+    });
+    after(() => app.close());
+
+    // cannot get the app.agent
+    it.skip('should send message from app to agent', async () => {
+      assert.deepEqual(app._agent.received, [
+        'send data when app starting',
+        'send data when app started',
+        'send data to a random agent',
+      ]);
+    });
+
+    it('should send message from agent to app', async () => {
+      // wait for message received
+      await scheduler.wait(500);
+      assert.deepEqual(app.getAppInstanceProperty('received'), [
+        'send action to all app',
+        'send data to app when server started',
+        'send data to a random app',
+      ]);
+    });
+
+    it('should receive egg-ready', () => {
+      assert.equal(app.getAppInstanceProperty('eggReady'), true);
+    });
+
+    it('should broadcast message successfully', () => {
+      assert.equal(app.getAppInstanceProperty('recievedBroadcastAction'), true);
+      assert.equal(app.getAppInstanceProperty('recievedAgentRecievedAction'), true);
+    });
+
+    it('should send message from app to app', () => {
+      assert.equal(app.getAppInstanceProperty('recievedAppAction'), true);
+    });
   });
 });

@@ -1,10 +1,8 @@
-'use strict';
+import { strict as assert } from 'node:assert';
+import mm, { MockApplication } from '../../../src/index.js';
 
-const assert = require('assert');
-const mm = require('../../..');
-
-describe('test/app/middleware/cluster_app_mock.test.js', () => {
-  let app;
+describe('test/app/middleware/cluster_app_mock.test.ts', () => {
+  let app: MockApplication;
   before(() => {
     app = mm.app({
       baseDir: 'demo',
@@ -48,10 +46,10 @@ describe('test/app/middleware/cluster_app_mock.test.js', () => {
       });
   });
 
-  it('should recover error instance', function* () {
-    let called;
-    let callError;
-    mm(app, 'foo', (a, err) => { called = true; callError = err; });
+  it('should recover error instance', async () => {
+    let called = false;
+    let callError: any;
+    mm(app, 'foo', (_a: any, err: Error) => { called = true; callError = err; });
 
     const err = {
       __egg_mock_type: 'error',
@@ -60,7 +58,7 @@ describe('test/app/middleware/cluster_app_mock.test.js', () => {
       stack: 'error stack',
       foo: 'bar',
     };
-    yield app.httpRequest()
+    await app.httpRequest()
       .post('/__egg_mock_call_function')
       .send({ method: 'foo', args: [ 1, err ] })
       .expect(200)

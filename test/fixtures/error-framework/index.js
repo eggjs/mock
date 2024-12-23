@@ -1,5 +1,3 @@
-'use strict';
-
 const egg = require('egg');
 
 class Application extends egg.Application {
@@ -8,4 +6,6 @@ class Application extends egg.Application {
   }
 }
 
-Object.assign(exports, egg, { Application });
+exports.Application = Application;
+exports.Agent = egg.Agent;
+exports.startCluster = egg.startCluster;

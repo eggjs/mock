@@ -1,17 +1,16 @@
-const path = require('path');
-const request = require('supertest');
-const pedding = require('pedding');
-const assert = require('assert');
-const mm = require('..');
-const { sleep } = require('../lib/utils');
-const fixtures = path.join(__dirname, 'fixtures');
-const baseDir = path.join(fixtures, 'app-event');
+import assert from 'node:assert';
+import { scheduler } from 'node:timers/promises';
+import { pending } from 'pedding';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
 
-describe('test/app_event.test.js', () => {
+const baseDir = getFixtures('app-event');
+
+describe('test/app_event.test.ts', () => {
   afterEach(mm.restore);
 
   describe('after ready', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.app({
         baseDir,
@@ -19,14 +18,16 @@ describe('test/app_event.test.js', () => {
       });
       return app.ready();
     });
-    after(() => app.close());
+    after(async () => {
+      await app.close();
+    });
 
     it('should listen by eventByRequest', done => {
-      done = pedding(3, done);
+      done = pending(3, done);
       app.once('eventByRequest', done);
       app.on('eventByRequest', done);
 
-      request(app.callback())
+      app.httpRequest()
         .get('/event')
         .expect(200)
         .expect('done', done);
@@ -34,7 +35,7 @@ describe('test/app_event.test.js', () => {
   });
 
   describe('before ready', () => {
-    let app;
+    let app: MockApplication;
     beforeEach(() => {
       app = mm.app({
         baseDir,
@@ -45,23 +46,23 @@ describe('test/app_event.test.js', () => {
     afterEach(() => app.close());
 
     it('should listen after app ready', done => {
-      done = pedding(2, done);
+      done = pending(2, done);
       app.once('appReady', done);
       app.on('appReady', done);
     });
 
     it('should listen after app instantiate', done => {
-      done = pedding(2, done);
+      done = pending(2, done);
       app.once('appInstantiated', done);
       app.on('appInstantiated', done);
     });
   });
 
   describe('throw before app init', () => {
-    let app;
+    let app: MockApplication;
     beforeEach(() => {
-      const baseDir = path.join(fixtures, 'app');
-      const customEgg = path.join(fixtures, 'error-framework');
+      const baseDir = getFixtures('app');
+      const customEgg = getFixtures('error-framework');
       app = mm.app({
         baseDir,
         customEgg,
@@ -72,7 +73,7 @@ describe('test/app_event.test.js', () => {
 
     it('should listen using app.on', done => {
       app.on('error', err => {
-        assert(err.message === 'start error');
+        assert.equal(err.message, 'start error');
         done();
       });
     });
@@ -84,20 +85,19 @@ describe('test/app_event.test.js', () => {
       });
     });
 
-    it('should throw error from ready', function* () {
+    it('should throw error from ready', async () => {
       try {
-        yield app.ready();
-      } catch (err) {
+        await app.ready();
+      } catch (err: any) {
         assert(err.message === 'start error');
       }
     });
 
-    it('should close when app init failed', function* () {
+    it('should close when app init failed', async () => {
       app.once('error', () => {});
-      yield sleep(1000);
+      await scheduler.wait(1000);
       // app._app is undefined
-      yield app.close();
+      await app.close();
     });
-
   });
 });

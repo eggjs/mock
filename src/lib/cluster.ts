@@ -192,6 +192,13 @@ export class ClusterApplication extends Coffee {
   }
 
   /**
+   * get app[property] value in app worker
+   */
+  getAppInstanceProperty(property: string) {
+    return this._callFunctionOnAppWorker('__getter__', [], property, true);
+  }
+
+  /**
    * collection logger message, then can be use on `expectLog()`
    * it's different from `app.expectLog()`, only support string params.
    *
