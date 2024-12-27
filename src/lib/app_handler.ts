@@ -4,11 +4,11 @@ import { setupAgent } from './agent_handler.js';
 import { createApp } from './app.js';
 import { restore } from './restore.js';
 import { getEggOptions } from './utils.js';
-import Application from '../app/extend/application.js';
+import ApplicationUnittest from '../app/extend/application.js';
 
 const debug = debuglog('@eggjs/mock/lib/app_handler');
 
-let app: Application;
+let app: ApplicationUnittest;
 
 export function setupApp() {
   if (app) {
@@ -31,7 +31,7 @@ export function setupApp() {
     });
     debug('mockParallelApp app: %s', !!app);
   } else {
-    app = createApp(options);
+    app = createApp(options) as unknown as ApplicationUnittest;
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     if (typeof beforeAll === 'function') {

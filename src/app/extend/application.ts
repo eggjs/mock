@@ -46,7 +46,7 @@ export interface MockContextDelegation extends ContextDelegation {
 export default abstract class ApplicationUnittest extends EggCore {
   [key: string]: any;
   declare options: MockOptions & EggCoreOptions;
-  _mockHttpClient: MockHttpClientMethod;
+  _mockHttpClient?: MockHttpClientMethod;
   declare logger: Logger;
   declare coreLogger: Logger;
   abstract getLogger(name: string): Logger;

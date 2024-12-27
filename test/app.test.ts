@@ -88,7 +88,7 @@ describe('test/app.test.ts', () => {
     });
     await app.ready();
     assert(!app.options.beforeInit);
-    assert(app.options.test === 'abc');
+    assert((app.options as any).test === 'abc');
   });
 
   it('should emit error when load Application fail', done => {

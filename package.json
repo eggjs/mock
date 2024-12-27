@@ -1,6 +1,6 @@
 {
   "name": "@eggjs/mock",
-  "version": "6.0.0-beta.3",
+  "version": "6.0.0-beta.5",
   "publishConfig": {
     "access": "public"
   },
@@ -29,7 +29,7 @@
     "node": ">= 18.19.0"
   },
   "dependencies": {
-    "@eggjs/core": "^6.2.4",
+    "@eggjs/core": "beta",
     "@eggjs/supertest": "^8.1.0",
     "@eggjs/utils": "^4.0.3",
     "coffee": "^5.2.1",
@@ -45,7 +45,7 @@
     "utility": "^2.3.0"
   },
   "peerDependencies": {
-    "mocha": "^10.2.0"
+    "mocha": "^10 || ^11"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.1",
@@ -63,7 +63,7 @@
     "egg-tracer": "^2.0.0",
     "eslint": "8",
     "eslint-config-egg": "14",
-    "mocha": "10",
+    "mocha": "^11.0.1",
     "pedding": "^2.0.0",
     "tshy": "3",
     "tshy-after": "^1.3.1",
@@ -72,11 +72,11 @@
   },
   "scripts": {
     "lint": "eslint --cache src test --ext .ts",
-    "pretest": "npm run lint -- --fix && npm run prepublishOnly",
+    "pretest": "npm run lint -- --fix",
     "test": "egg-bin test",
     "test-local": "egg-bin test",
-    "preci": "npm run lint && npm run prepublishOnly && attw --pack --profile node16",
-    "ci": "egg-bin cov -p",
+    "preci": "npm run lint",
+    "ci": "egg-bin cov -p && npm run prepublishOnly && attw --pack --profile node16",
     "prepublishOnly": "tshy && tshy-after"
   },
   "type": "module",

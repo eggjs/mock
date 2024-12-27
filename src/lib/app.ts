@@ -4,7 +4,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { Base } from 'sdk-base';
 import { detectPort } from 'detect-port';
-import type { Agent, Application } from 'egg';
 import { importModule } from '@eggjs/utils';
 import { sleep, rimraf, getProperty, getSourceDirname } from './utils.js';
 import { formatOptions } from './format_options.js';
@@ -12,10 +11,12 @@ import { context } from './context.js';
 import { setCustomLoader } from './mock_custom_loader.js';
 import { createServer } from './mock_http_server.js';
 import type { MockOptions, MockApplicationOptions } from './types.js';
+import ApplicationUnittest from '../app/extend/application.js';
+import AgentUnittest from '../app/extend/agent.js';
 
 const debug = debuglog('@eggjs/mock/lib/app');
 
-const apps = new Map();
+const apps = new Map<string, ApplicationUnittest>();
 const APP_INIT = Symbol('appInit');
 const MESSENGER = Symbol('messenger');
 const MOCK_APP_METHOD = [
@@ -30,9 +31,9 @@ const MOCK_APP_METHOD = [
   'then',
 ];
 
-export class MockApplication extends Base {
-  _agent: Agent;
-  _app: Application;
+class MockApplicationWorker extends Base {
+  _agent: AgentUnittest;
+  _app: ApplicationUnittest;
   declare options: MockApplicationOptions;
   baseDir: string;
   [APP_INIT] = false;
@@ -82,13 +83,13 @@ export class MockApplication extends Base {
     assert(egg.Agent, `should export Agent class from framework ${this.options.framework}`);
 
     const Agent = egg.Agent;
-    const agent = this._agent = new Agent({ ...this.options }) as Agent;
+    const agent = this._agent = new Agent({ ...this.options }) as AgentUnittest;
     debug('agent instantiate');
     await agent.ready();
     debug('agent ready');
 
     const ApplicationClass = bindMessenger(egg.Application, agent);
-    const app = this._app = new ApplicationClass({ ...this.options }) as unknown as Application;
+    const app = this._app = new ApplicationClass({ ...this.options }) as unknown as ApplicationUnittest;
 
     // https://github.com/eggjs/egg/blob/8bb7c7e7d59d6aeca4b2ed1eb580368dcb731a4d/lib/egg.js#L125
     // egg single mode mount this at start(), so egg-mock should impel it.
@@ -188,12 +189,12 @@ export class MockApplication extends Base {
   }
 }
 
-export function createApp(createOptions?: MockOptions) {
+export function createApp(createOptions?: MockOptions): ApplicationUnittest {
   const options = formatOptions(createOptions);
   if (options.cache && apps.has(options.baseDir)) {
     const app = apps.get(options.baseDir);
     // return cache when it hasn't been killed
-    if (!app.isClosed) {
+    if (app && !app.isClosed) {
       debug('use cache app %s', options.baseDir);
       return app;
     }
@@ -201,8 +202,8 @@ export function createApp(createOptions?: MockOptions) {
     apps.delete(options.baseDir);
   }
 
-  let app = new MockApplication(options);
-  app = new Proxy(app, {
+  const appWorker = new MockApplicationWorker(options);
+  const proxyApp = new Proxy(appWorker, {
     get(target: any, prop: string) {
       // don't delegate properties on MockApplication
       if (MOCK_APP_METHOD.includes(prop)) {
@@ -258,13 +259,13 @@ export function createApp(createOptions?: MockOptions) {
     },
   });
 
-  apps.set(options.baseDir, app);
-  return app;
+  apps.set(options.baseDir, proxyApp);
+  return proxyApp;
 }
 
-function bindMessenger(Application: any, agent: Agent) {
+function bindMessenger(ApplicationClass: any, agent: AgentUnittest) {
   const agentMessenger = agent.messenger;
-  return class MessengerApplication extends Application {
+  return class MessengerApplication extends ApplicationClass {
     [MESSENGER]: any;
 
     constructor(options: any) {

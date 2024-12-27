@@ -8,6 +8,7 @@ import {
 import { getMockAgent, restoreMockAgent } from '../../lib/mock_agent.js';
 
 export default abstract class AgentUnittest extends EggCore {
+  [key: string]: any;
   _mockHttpClient: MockHttpClientMethod;
 
   /**
