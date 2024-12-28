@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.1",
+    "@eggjs/bin": "^7.0.0",
     "@eggjs/tegg": "^3.2.2",
     "@eggjs/tegg-config": "^3.2.2",
     "@eggjs/tegg-controller-plugin": "^3.2.2",
@@ -75,7 +76,7 @@
     "clean": "rimraf dist",
     "lint": "eslint --cache src test --ext .ts",
     "pretest": "npm run clean && npm run lint -- --fix && npm run prepublishOnly",
-    "test": "egg-bin test -p",
+    "test": "egg-bin test",
     "posttest": "npm run clean",
     "test-local": "egg-bin test",
     "preci": "npm run clean && npm run lint && npm run prepublishOnly",
