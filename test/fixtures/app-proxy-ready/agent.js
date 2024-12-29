@@ -1,10 +1,8 @@
-'use strict';
-
-const { sleep } = require('../../../lib/utils');
+const { scheduler } = require('node:timers/promises');
 
 module.exports = app => {
   // set timeout let testcase ran before ready
-  app.beforeStart(function* () {
-    yield sleep(1000);
+  app.beforeStart(async function() {
+    await scheduler.wait(1000);
   });
 };

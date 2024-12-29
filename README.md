@@ -1,23 +1,25 @@
-# egg-mock
+# @eggjs/mock
 
 [![NPM version][npm-image]][npm-url]
-[![Node.js CI](https://github.com/eggjs/egg-mock/actions/workflows/nodejs.yml/badge.svg)](https://github.com/eggjs/egg-mock/actions/workflows/nodejs.yml)
+[![Node.js CI](https://github.com/eggjs/mock/actions/workflows/nodejs.yml/badge.svg)](https://github.com/eggjs/mock/actions/workflows/nodejs.yml)
 [![Test coverage][codecov-image]][codecov-url]
 [![npm download][download-image]][download-url]
+[![Node.js Version](https://img.shields.io/node/v/@eggjs/mock.svg?style=flat)](https://nodejs.org/en/download/)
 
-[npm-image]: https://img.shields.io/npm/v/egg-mock.svg?style=flat-square
-[npm-url]: https://npmjs.org/package/egg-mock
-[codecov-image]: https://codecov.io/github/eggjs/egg-mock/coverage.svg?branch=master
-[codecov-url]: https://codecov.io/github/eggjs/egg-mock?branch=master
-[download-image]: https://img.shields.io/npm/dm/egg-mock.svg?style=flat-square
-[download-url]: https://npmjs.org/package/egg-mock
+[npm-image]: https://img.shields.io/npm/v/@eggjs/mock.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/@eggjs/mock
+[codecov-image]: https://codecov.io/github/eggjs/mock/coverage.svg?branch=master
+[codecov-url]: https://codecov.io/github/eggjs/mock?branch=master
+[download-image]: https://img.shields.io/npm/dm/@eggjs/mock.svg?style=flat-square
+[download-url]: https://npmjs.org/package/@eggjs/mock
 
-Mock library for testing Egg applications, plugins and custom Egg frameworks with ease. `egg-mock` inherits all APIs from [node_modules/mm](https://github.com/node-modules/mm), offering more flexibility.
+Mock library for testing Egg applications, plugins and custom Egg frameworks with ease.
+`egg-mock` inherits all APIs from [node_modules/mm](https://github.com/node-modules/mm), offering more flexibility.
 
 ## Install
 
 ```bash
-$ npm i egg-mock --save-dev
+npm i egg-mock --save-dev
 ```
 
 ## Usage
@@ -28,8 +30,8 @@ Launch a mock server with `mm.app`
 
 ```js
 // test/index.test.js
-const path = require('path');
-const mm = require('egg-mock');
+const path = require('node:path');
+const mm = require('@eggjs/mock');
 
 describe('some test', () => {
   let app;
@@ -140,7 +142,8 @@ Create a mock application.
 Create a mock cluster server, but you can't use API in application, you should test using `supertest`.
 
 ```js
-const mm = require('egg-mock');
+const mm = require('@eggjs/mock');
+
 describe('test/app.js', () => {
   let app, config;
   before(() => {
@@ -372,12 +375,12 @@ console.log(ctx.session.foo);
 ### app.mockService(service, methodName, fn)
 
 ```js
-it('should mock user name', function* () {
-  app.mockService('user', 'getName', function* (ctx, methodName, args) {
+it('should mock user name', async function () {
+  app.mockService('user', 'getName', async function (ctx, methodName, args) {
     return 'popomore';
   });
   const ctx = app.mockContext();
-  yield ctx.service.user.getName();
+  await ctx.service.user.getName();
 });
 ```
 
@@ -404,8 +407,8 @@ return app.httpRequest()
 Mock httpclient request, e.g.: `ctx.curl`
 
 ```js
-app.get('/', function*() {
-  const ret = yield this.curl('https://eggjs.org');
+app.get('/', async function() {
+  const ret = await this.curl('https://eggjs.org');
   this.body = ret.data.toString();
 });
 
@@ -451,7 +454,7 @@ app.agent.mockHttpclient('https://eggjs.org', {
 We also provide a bootstrap file for applications' unit test to reduce duplicated code:
 
 ```js
-const { app, mock, assert } = require('egg-mock/bootstrap');
+const { app, mock, assert } = require('@eggjs/mock/bootstrap');
 
 describe('test app', () => {
   it('should request success', () => {
@@ -478,7 +481,7 @@ We inject ctx to every test case, so you can use `app.currentContext` in your te
 and the first call of `app.mockContext` will reuse `app.currentContext`.
 
 ```js
-const { app, mock, assert } = require('egg-mock/bootstrap');
+const { app, mock, assert } = require('@eggjs/mock/bootstrap');
 
 describe('test ctx', () => {
   it('should can use ctx', () => {
@@ -502,10 +505,12 @@ describe('test ctx', () => {
 
 And if you use mm.app to bootstrap app, you can manually call setGetAppCallback,
 then egg-mock will inject ctx for each test case.
+
 ```js
 // test/.setup.js
-const mm = require('egg-mock');
+const mm = require('@eggjs/mock');
 const path = require('path');
+
 before(async function() {
   const app = this.app = mm.app();
   mm.setGetAppCallback(() => {
@@ -537,6 +542,6 @@ Please open an issue [here](https://github.com/eggjs/egg/issues).
 
 ## Contributors
 
-[![Contributors](https://contrib.rocks/image?repo=eggjs/egg-mock)](https://github.com/eggjs/egg-mock/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=eggjs/mock)](https://github.com/eggjs/mock/graphs/contributors)
 
 Made with [contributors-img](https://contrib.rocks).

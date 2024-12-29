@@ -1,3 +1,1 @@
-'use strict';
-
-require('../../../bootstrap');
+require('../../../dist/commonjs/bootstrap');

@@ -1,13 +1,14 @@
-import assert from 'assert';
-import { Context } from 'egg';
-import { app } from '../../../../bootstrap';
+import assert from 'node:assert';
+import { ContextDelegation } from 'egg';
+// import { app } from '../../../../src/bootstrap.js';
+import { app } from '../../../../dist/commonjs/bootstrap';
 
 describe('test/hooks.test.ts', () => {
   let beforeCtx;
   let afterCtx;
-  let beforeEachCtxList: Record<string, Context> = {};
-  let afterEachCtxList: Record<string, Context> = {};
-  let itCtxList: Record<string, Context> = {};
+  const beforeEachCtxList: Record<string, ContextDelegation> = {};
+  const afterEachCtxList: Record<string, ContextDelegation> = {};
+  const itCtxList: Record<string, ContextDelegation> = {};
 
   before(async () => {
     beforeCtx = app.currentContext;
@@ -16,54 +17,54 @@ describe('test/hooks.test.ts', () => {
   after(() => {
     afterCtx = app.currentContext;
     assert(beforeCtx);
-    assert(beforeCtx !== itCtxList['foo']);
-    assert(itCtxList['foo'] !== itCtxList['bar']);
+    assert(beforeCtx !== itCtxList.foo);
+    assert(itCtxList.foo !== itCtxList.bar);
     assert(afterCtx === beforeCtx);
-    assert(beforeEachCtxList['foo'] === afterEachCtxList['foo']);
-    assert(beforeEachCtxList['foo'] === itCtxList['foo']);
+    assert(beforeEachCtxList.foo === afterEachCtxList.foo);
+    assert(beforeEachCtxList.foo === itCtxList.foo);
   });
 
   describe('foo', () => {
     beforeEach(() => {
-      beforeEachCtxList['foo'] = app.currentContext;
+      beforeEachCtxList.foo = app.currentContext as ContextDelegation;
     });
 
     it('should work', () => {
-      itCtxList['foo'] = app.currentContext;
+      itCtxList.foo = app.currentContext as ContextDelegation;
     });
 
     afterEach(() => {
-      afterEachCtxList['foo'] = app.currentContext;
+      afterEachCtxList.foo = app.currentContext as ContextDelegation;
     });
   });
 
   describe('bar', () => {
     beforeEach(() => {
-      beforeEachCtxList['bar'] = app.currentContext;
+      beforeEachCtxList.bar = app.currentContext as ContextDelegation;
     });
 
     it('should work', () => {
-      itCtxList['bar'] = app.currentContext;
+      itCtxList.bar = app.currentContext as ContextDelegation;
     });
 
     afterEach(() => {
-      afterEachCtxList['bar'] = app.currentContext;
+      afterEachCtxList.bar = app.currentContext as ContextDelegation;
     });
   });
 
   describe('multi it', () => {
-    const itCtxList: Array<Context> = [];
+    const itCtxList: Array<ContextDelegation> = [];
 
     it('should work 1', () => {
-      itCtxList.push(app.currentContext);
+      itCtxList.push(app.currentContext as ContextDelegation);
     });
 
     it('should work 2', () => {
-      itCtxList.push(app.currentContext);
+      itCtxList.push(app.currentContext as ContextDelegation);
     });
 
     after(() => {
       assert(itCtxList[0] !== itCtxList[1]);
-    })
+    });
   });
 });

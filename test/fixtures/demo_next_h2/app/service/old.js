@@ -1,7 +1,5 @@
-'use strict';
-
 module.exports = () => {
-  exports.test = function* () {
+  exports.test = async function() {
     return 'hello';
   };
 

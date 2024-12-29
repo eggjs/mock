@@ -1,6 +1,5 @@
-'use strict';
-
 const egg = require('egg');
+
 const EGG_PATH = Symbol.for('egg#eggPath');
 
 class BarApplication extends egg.Application {
@@ -9,5 +8,6 @@ class BarApplication extends egg.Application {
   }
 }
 
-Object.assign(exports, egg);
+exports.Agent = egg.Agent;
 exports.Application = BarApplication;
+exports.startCluster = egg.startCluster;

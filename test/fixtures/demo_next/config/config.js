@@ -1,6 +1,7 @@
 module.exports = {
   httpclient: {
     useHttpClientNext: true,
+    allowH2: false,
     request: {
       timing: true,
     },

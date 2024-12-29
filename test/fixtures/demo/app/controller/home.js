@@ -1,6 +1,4 @@
-'use strict';
-
-exports.get = function* () {
+exports.get = function () {
   this.body = {
     cookieValue: this.getCookie('foo') || undefined,
     cookiesValue: this.cookies.get('foo') || undefined,
@@ -8,34 +6,34 @@ exports.get = function* () {
   };
 };
 
-exports.post = function* () {
+exports.post = function () {
   this.body = 'done';
 };
 
-exports.hello = function* () {
+exports.hello = function () {
   this.body = 'hi';
 };
 
-exports.service = function* () {
-  this.body = {
-    foo1: yield this.service.foo.get(),
-    foo2: yield this.service.bar.foo.get(),
-    foo3: this.service.foo.getSync(),
-    thirdService: yield this.service.third.bar.foo.get(),
+exports.service = async ctx => {
+  ctx.body = {
+    foo1: await ctx.service.foo.get(),
+    foo2: await ctx.service.bar.foo.get(),
+    foo3: ctx.service.foo.getSync(),
+    thirdService: await ctx.service.third.bar.foo.get(),
   };
 };
 
-exports.serviceOld = function* () {
-  this.body = yield this.service.old.test();
+exports.serviceOld = async function () {
+  this.body = await this.service.old.test();
 };
 
-exports.header = function* () {
+exports.header = function () {
   this.body = {
     header: this.get('customheader'),
   };
 };
 
-exports.urllib = function* () {
+exports.urllib = async function () {
   const url = 'http://' + this.host;
   const method = this.query.method || 'request';
   const data = this.query.data ? JSON.parse(this.query.data) : undefined;
@@ -45,8 +43,8 @@ exports.urllib = function* () {
     data,
   });
   if (method === 'request') r = r.then(d => d);
-  const r1 = yield r;
-  const r2 = yield this.app.httpclient[method](url + '/mock_url', {
+  const r1 = await r;
+  const r2 = await this.app.httpclient[method](url + '/mock_url', {
     method: 'POST',
     dataType,
     data,
@@ -60,24 +58,24 @@ exports.urllib = function* () {
   };
 };
 
-exports.mockUrlGet = function* () {
+exports.mockUrlGet = function () {
   this.body = 'url get';
 };
 
-exports.mockUrlPost = function* () {
+exports.mockUrlPost = async function () {
   this.body = 'url post';
 };
 
-exports.mockUrllibHeaders = function* () {
+exports.mockUrllibHeaders = async function () {
   const url = 'http://' + this.host;
   const method = this.query.method || 'request';
-  const res = yield this.app.httpclient[method](url + '/mock_url');
+  const res = await this.app.httpclient[method](url + '/mock_url');
   this.body = res.headers;
 };
 
-exports.dataType = function* () {
+exports.dataType = async function () {
   const url = 'http://' + this.host;
-  const res = yield this.app.httpclient.request(url + '/mock_url', {
+  const res = await this.app.httpclient.request(url + '/mock_url', {
     dataType: 'json',
   });
   this.body = res.data;

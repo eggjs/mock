@@ -1,11 +1,9 @@
-'use strict';
-
 module.exports = app => {
-  app.get('home', '/', function* () {
+  app.get('home', '/', async function() {
     this.body = 'hello world';
   });
 
-  app.get('session', '/session', function* () {
+  app.get('session', '/session', async function() {
     this.body = 'hello session';
   });
 };

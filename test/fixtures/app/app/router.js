@@ -1,4 +1,4 @@
-const { sleep } = require('../../../../lib/utils');
+const { scheduler } = require('node:timers/promises');
 
 module.exports = app => {
   app.get('/', async ctx => {
@@ -30,7 +30,7 @@ module.exports = app => {
   app.get('/counter/plus', async ctx => {
     ctx.runInBackground(async ctx => {
       // mock io delay
-      await sleep(10);
+      await scheduler.wait(10);
       if (ctx.superMan) {
         counter += 10;
         return;
@@ -42,7 +42,7 @@ module.exports = app => {
 
   app.get('/counter/minus', async ctx => {
     ctx.runInBackground(async () => {
-      await sleep(10);
+      await scheduler.wait(10);
       counter--;
     });
     ctx.body = { counter };
@@ -51,7 +51,7 @@ module.exports = app => {
   app.get('/counter/plusplus', async ctx => {
     ctx.runInBackground(async ctx => {
       // mock io delay
-      await sleep(10);
+      await scheduler.wait(10);
       if (ctx.superMan) {
         counter += 10;
       } else {
@@ -59,7 +59,7 @@ module.exports = app => {
       }
       ctx.runInBackground(async ctx => {
         // mock io delay
-        await sleep(10);
+        await scheduler.wait(10);
         if (ctx.superMan) {
           counter += 10;
         } else {
