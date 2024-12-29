@@ -85,4 +85,4 @@ export type {
 
 export type {
   MockAgent,
-} from 'egg/urllib';
+} from 'urllib';
