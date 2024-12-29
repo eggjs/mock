@@ -59,7 +59,6 @@
     "@types/mocha": "10",
     "@types/node": "22",
     "egg": "beta",
-    "egg-bin": "beta",
     "egg-errors": "^2.2.1",
     "egg-tracer": "^2.0.0",
     "eslint": "8",
