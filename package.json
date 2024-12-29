@@ -81,7 +81,7 @@
     "posttest": "npm run clean",
     "test-local": "egg-bin test",
     "preci": "npm run clean && npm run lint && npm run prepublishOnly",
-    "ci": "egg-bin cov -p",
+    "ci": "egg-bin cov",
     "postci": "npm run clean",
     "prepublishOnly": "tshy && tshy-after && attw --pack --profile node16"
   },
