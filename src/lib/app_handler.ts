@@ -8,9 +8,14 @@ import ApplicationUnittest from '../app/extend/application.js';
 
 const debug = debuglog('@eggjs/mock/lib/app_handler');
 
-let app: ApplicationUnittest;
+declare namespace globalThis {
+  let __eggMockAppInstance: ApplicationUnittest | null;
+}
+
+globalThis.__eggMockAppInstance = null;
 
 export function setupApp() {
+  let app = globalThis.__eggMockAppInstance!;
   if (app) {
     debug('return exists app');
     return app;
@@ -46,6 +51,7 @@ export function setupApp() {
       afterEach(restore);
     }
   }
+  globalThis.__eggMockAppInstance = app;
   return app;
 }
 
@@ -59,6 +65,7 @@ export async function getApp(suite?: unknown, test?: unknown) {
   if (getAppCallback) {
     return getAppCallback(suite, test);
   }
+  const app = globalThis.__eggMockAppInstance!;
   if (app) {
     await app.ready();
   }
@@ -66,5 +73,5 @@ export async function getApp(suite?: unknown, test?: unknown) {
 }
 
 export function getBootstrapApp() {
-  return app;
+  return globalThis.__eggMockAppInstance!;
 }
