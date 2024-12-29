@@ -1,7 +1,7 @@
 import { expectType } from 'tsd';
 import { ContextDelegation } from 'egg';
-import { MockApplication, MockAgent, ResultObject } from './index.js';
-import { getBootstrapApp, mock, mm } from './bootstrap.js';
+import { MockApplication, MockAgent, ResultObject } from '../src/index.js';
+import { getBootstrapApp, mock, mm } from '../src/bootstrap.js';
 
 const app = getBootstrapApp();
 expectType<MockApplication>(app);

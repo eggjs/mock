@@ -1,0 +1,7 @@
+{
+  "name": "helloworld",
+  "egg": {
+    "typescript": false
+  },
+  "type": "module"
+}

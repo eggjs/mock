@@ -13,11 +13,12 @@ if (pkgInfo.eggPlugin) {
   throw new Error('DO NOT USE bootstrap to test plugin');
 }
 
-setupApp();
+const app = setupApp();
 
 export {
   assert,
   getBootstrapApp,
+  app,
   mm,
   mock,
   MockApplication,

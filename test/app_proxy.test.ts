@@ -298,7 +298,7 @@ describe('test/app_proxy.test.ts', () => {
     });
   });
 
-  describe.only('messenger binding on cluster() mode', () => {
+  describe('messenger binding on cluster() mode', () => {
     let app: MockApplication;
     const baseDir = getFixtures('messenger-binding');
     before(() => {

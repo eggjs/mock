@@ -1,7 +1,6 @@
 import { strict as assert } from 'node:assert';
 import mm, { MockApplication } from '../src/index.js';
 import { getFixtures } from './helper.js';
-import { pending } from 'pedding';
 
 describe('test/app.test.ts', () => {
   afterEach(mm.restore);
@@ -91,15 +90,11 @@ describe('test/app.test.ts', () => {
     assert((app.options as any).test === 'abc');
   });
 
-  it('should emit error when load Application fail', done => {
-    done = pending(2, done);
+  it('should emit error when load Application fail', async () => {
     const baseDir = getFixtures('app-fail');
     const app = mm.app({ baseDir, cache: false });
-    app.once('error', (err: any) => {
-      app.close().then(() => done);
-      assert(/load error/.test(err.message));
-      done();
-    });
+    await assert.rejects(app.ready(), /load error/);
+    await app.close();
   });
 
   it('should FrameworkErrorformater work during app boot', async () => {
