@@ -19,7 +19,8 @@ describe.skip('test/parallel.test.ts', () => {
   });
 
   it('should work', async () => {
-    const { app } = await import('../src/bootstrap.js');
+    const { getBootstrapApp } = await import('../src/bootstrap.js');
+    const app = getBootstrapApp();
     await app.ready();
     await app.httpRequest()
       .get('/')
