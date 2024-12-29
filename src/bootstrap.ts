@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import path from 'node:path';
 import { readJSONSync } from 'utility';
-import mm, { mock } from './index.js';
+import mm, { mock, MockApplication } from './index.js';
 import { getBootstrapApp, setupApp } from './lib/app_handler.js';
 import { getEggOptions } from './lib/utils.js';
 
@@ -15,11 +15,10 @@ if (pkgInfo.eggPlugin) {
 
 setupApp();
 
-const app = getBootstrapApp();
-
 export {
   assert,
-  app,
+  getBootstrapApp,
   mm,
   mock,
+  MockApplication,
 };
