@@ -46,6 +46,7 @@ export function setupApp() {
       afterEach(restore);
     }
   }
+  return app;
 }
 
 let getAppCallback: (suite: unknown, test?: unknown) => any;
