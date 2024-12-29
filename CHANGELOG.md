@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.2](https://github.com/eggjs/mock/compare/v6.0.1...v6.0.2) (2024-12-29)
+
+
+### Bug Fixes
+
+* set bootstrap app to global ([#180](https://github.com/eggjs/mock/issues/180)) ([4e1525c](https://github.com/eggjs/mock/commit/4e1525ced57d2596058ca102e66baf2f43f12e4f))
+
 ## [6.0.1](https://github.com/eggjs/mock/compare/v6.0.0...v6.0.1) (2024-12-29)
 
 
