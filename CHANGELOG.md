@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.3](https://github.com/eggjs/mock/compare/v6.0.2...v6.0.3) (2024-12-29)
+
+
+### Bug Fixes
+
+* add urllib to dependencies ([#181](https://github.com/eggjs/mock/issues/181)) ([d56e49d](https://github.com/eggjs/mock/commit/d56e49d3ad6a6f5b2c3f9f7405de71d8afe10615))
+
 ## [6.0.2](https://github.com/eggjs/mock/compare/v6.0.1...v6.0.2) (2024-12-29)
 
 
