@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.1](https://github.com/eggjs/mock/compare/v6.0.0...v6.0.1) (2024-12-29)
+
+
+### Bug Fixes
+
+* support simple test on normal app ([#179](https://github.com/eggjs/mock/issues/179)) ([3b0957f](https://github.com/eggjs/mock/commit/3b0957fd33a638d8c505dd09ba47323f1d006a8a))
+
 ## [6.0.0](https://github.com/eggjs/mock/compare/v5.15.1...v6.0.0) (2024-12-29)
 
 
