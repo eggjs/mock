@@ -3,5 +3,8 @@
   "egg": {
     "typescript": false
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@eggjs/mock": "6"
+  }
 }
