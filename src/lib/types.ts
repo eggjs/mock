@@ -76,3 +76,13 @@ export interface MockClusterApplicationOptions extends MockClusterOptions {
   framework: string;
   port: number;
 }
+
+export type {
+  MockResultOptions, ResultObject,
+  MockResponseCallbackOptions, MockResultFunction,
+  MockHttpClientMethod,
+} from './mock_httpclient.js';
+
+export type {
+  MockAgent,
+} from 'egg/urllib';

@@ -117,7 +117,7 @@ export default abstract class ApplicationUnittest extends EggCore {
       mockCtxStorage: false,
       reuseCtxStorage: false,
     });
-    return await this.ctxStorage.run(ctx, async () => {
+    return await this.ctxStorage.run(ctx as any, async () => {
       return await fn(ctx);
     });
   }
@@ -330,7 +330,8 @@ export default abstract class ApplicationUnittest extends EggCore {
     if (!this._mockHttpClient) {
       this._mockHttpClient = createMockHttpClient(this);
     }
-    return this._mockHttpClient(mockUrl, mockMethod, mockResult);
+    this._mockHttpClient(mockUrl, mockMethod, mockResult);
+    return this;
   }
 
   /**
@@ -346,7 +347,7 @@ export default abstract class ApplicationUnittest extends EggCore {
    * @function App#mockHttpclientAgent
    */
   mockAgent() {
-    return getMockAgent(this as any);
+    return getMockAgent(this);
   }
 
   async mockAgentRestore() {
@@ -357,8 +358,9 @@ export default abstract class ApplicationUnittest extends EggCore {
    * @see mm#restore
    * @function App#mockRestore
    */
-  get mockRestore() {
-    return restore;
+  async mockRestore() {
+    await this.mockAgentRestore();
+    restore();
   }
 
   /**

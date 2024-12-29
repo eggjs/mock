@@ -26,6 +26,8 @@ export interface MockResultOptions {
    */
   repeats?: number;
 }
+// keep compatible with old version
+export type ResultObject = MockResultOptions;
 
 export interface MockResponseCallbackOptions {
   path: string;

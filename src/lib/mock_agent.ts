@@ -2,7 +2,7 @@ import { debuglog } from 'node:util';
 import {
   MockAgent, setGlobalDispatcher, getGlobalDispatcher, Dispatcher,
   HttpClient,
-} from 'urllib';
+} from 'egg/urllib';
 
 const debug = debuglog('@eggjs/mock/lib/mock_agent');
 

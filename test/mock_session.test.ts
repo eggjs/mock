@@ -1,16 +1,15 @@
-'use strict';
+import { strict as assert } from 'node:assert';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
 
-const mm = require('..');
-const assert = require('assert');
-
-describe('test/mock_session.test.js', () => {
+describe('test/mock_session.test.ts', () => {
   afterEach(mm.restore);
 
   describe('single process mode', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.app({
-        baseDir: 'demo',
+        baseDir: getFixtures('demo'),
       });
       return app.ready();
     });
@@ -38,12 +37,13 @@ describe('test/mock_session.test.js', () => {
         });
     });
 
-    it.skip('should support mock session with plain type', () => {
+    it('should support mock session with plain type', () => {
       const ctx = app.mockContext();
-      app.mockSession();
+      (app as any).mockSession();
       app.mockSession('123');
-      assert(ctx.session === '123');
-      assert(!ctx.session.save);
+      assert(ctx.session);
+      assert(!(ctx as any).session.save);
+      assert.equal(ctx.session, '123');
     });
 
     it('should mock restore', () => {
@@ -54,10 +54,10 @@ describe('test/mock_session.test.js', () => {
   });
 
   describe('cluster process mode', () => {
-    let app;
+    let app: MockApplication;
     before(() => {
       app = mm.cluster({
-        baseDir: 'demo',
+        baseDir: getFixtures('demo'),
       });
       return app.ready();
     });

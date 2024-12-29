@@ -1,15 +1,12 @@
-'use strict';
+import { strict as assert } from 'node:assert';
+import mm, { MockApplication } from '../src/index.js';
+import { getFixtures } from './helper.js';
 
-const path = require('path');
-const assert = require('assert');
-const mm = require('..');
-const fixtures = path.join(__dirname, 'fixtures');
-
-describe('test/mock_service.test.js', () => {
-  let app;
+describe('test/mock_service.test.ts', () => {
+  let app: MockApplication;
   before(async () => {
     app = mm.app({
-      baseDir: path.join(fixtures, 'demo'),
+      baseDir: getFixtures('demo'),
     });
     await app.ready();
   });
@@ -41,7 +38,7 @@ describe('test/mock_service.test.js', () => {
       });
   });
 
-  it('mock repeat succeess', () => {
+  it('mock repeat success', () => {
     app.mockService('foo', 'get', 'foo');
     app.mockService('foo', 'get', 'foo');
     app.mockService('foo', 'getSync', 'foo');
@@ -58,24 +55,24 @@ describe('test/mock_service.test.js', () => {
       });
   });
 
-  it.skip('mock error succeess', async () => {
+  it.skip('mock error success', async () => {
     app.mockService('foo', 'get', new Error('async error'));
     try {
       const ctx = app.mockContext();
       await ctx.service.foo.get();
       throw new Error('should not execute');
-    } catch (err) {
+    } catch (err: any) {
       assert(err.message === 'async error');
     }
   });
 
-  it.skip('mock sync error succeess', async () => {
+  it.skip('mock sync error success', async () => {
     app.mockService('foo', 'getSync', new Error('sync error'));
     try {
       const ctx = app.mockContext();
       await ctx.service.foo.getSync();
       throw new Error('should not execute');
-    } catch (err) {
+    } catch (err: any) {
       assert(err.message === 'sync error');
     }
   });
