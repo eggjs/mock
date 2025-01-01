@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.4](https://github.com/eggjs/mock/compare/v6.0.3...v6.0.4) (2025-01-01)
+
+
+### Bug Fixes
+
+* add startMode types ([#182](https://github.com/eggjs/mock/issues/182)) ([c9b8aca](https://github.com/eggjs/mock/commit/c9b8aca67aef8e79f61ab3c2451aee7314d1b353))
+
 ## [6.0.3](https://github.com/eggjs/mock/compare/v6.0.2...v6.0.3) (2024-12-29)
 
 
