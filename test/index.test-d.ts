@@ -1,12 +1,12 @@
 import { expectType } from 'tsd';
-import { ContextDelegation } from 'egg';
+import { Context } from 'egg';
 import { MockApplication, MockAgent, ResultObject } from '../src/index.js';
 import { getBootstrapApp, mock, mm } from '../src/bootstrap.js';
 
 const app = getBootstrapApp();
 expectType<MockApplication>(app);
-expectType<ContextDelegation | undefined>(app.currentContext as ContextDelegation);
-expectType<ContextDelegation | undefined>(app.ctxStorage.getStore() as ContextDelegation);
+expectType<Context | undefined>(app.currentContext as Context);
+expectType<Context | undefined>(app.ctxStorage.getStore() as Context);
 expectType<MockApplication>(mock.app());
 expectType<MockApplication>(mm.app());
 

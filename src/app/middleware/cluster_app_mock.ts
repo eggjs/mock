@@ -1,16 +1,17 @@
 import { debuglog } from 'node:util';
-import { ContextDelegation, Next } from '@eggjs/core';
+import { Context, Next } from '@eggjs/core';
 
 const debug = debuglog('@eggjs/mock/app/middleware/cluster_app_mock');
 
 export default () => {
-  return async function clusterAppMock(ctx: ContextDelegation, next: Next) {
+  return async function clusterAppMock(ctx: Context, next: Next) {
     // use originalUrl to make sure other middlewares can't change request url
     if (ctx.originalUrl !== '/__egg_mock_call_function') {
       return next();
     }
-    debug('%s %s, body: %j', ctx.method, ctx.url, ctx.request.body);
-    const { method, property, args, needResult } = ctx.request.body;
+    const body = (ctx.request as any).body;
+    debug('%s %s, body: %j', ctx.method, ctx.url, body);
+    const { method, property, args, needResult } = body;
     if (!method) {
       ctx.status = 422;
       ctx.body = {

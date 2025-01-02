@@ -1,11 +1,11 @@
 import { strict as assert } from 'node:assert';
-import { ContextDelegation } from 'egg';
+import { Context } from 'egg';
 // import { app, mm } from '../../../../src/bootstrap.js';
 import { app, mm } from '../../../../dist/commonjs/bootstrap';
 import { LogService } from '../app/modules/foo/LogService';
 
 describe('test/tegg_context.test.ts', () => {
-  let ctx: ContextDelegation;
+  let ctx: Context;
   let logService: LogService;
   before(async () => {
     logService = await app.getEggObject(LogService);

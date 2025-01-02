@@ -1,14 +1,14 @@
 import assert from 'node:assert';
-import { ContextDelegation } from 'egg';
+import { Context } from 'egg';
 // import { app } from '../../../../src/bootstrap.js';
 import { app } from '../../../../dist/esm/bootstrap.js';
 
 describe('test/hooks.test.ts', () => {
   let beforeCtx;
   let afterCtx;
-  const beforeEachCtxList: Record<string, ContextDelegation> = {};
-  const afterEachCtxList: Record<string, ContextDelegation> = {};
-  const itCtxList: Record<string, ContextDelegation> = {};
+  const beforeEachCtxList: Record<string, Context> = {};
+  const afterEachCtxList: Record<string, Context> = {};
+  const itCtxList: Record<string, Context> = {};
 
   before(async () => {
     beforeCtx = app.currentContext;
@@ -26,41 +26,41 @@ describe('test/hooks.test.ts', () => {
 
   describe('foo', () => {
     beforeEach(() => {
-      beforeEachCtxList.foo = app.currentContext as ContextDelegation;
+      beforeEachCtxList.foo = app.currentContext as Context;
     });
 
     it('should work', () => {
-      itCtxList.foo = app.currentContext as ContextDelegation;
+      itCtxList.foo = app.currentContext as Context;
     });
 
     afterEach(() => {
-      afterEachCtxList.foo = app.currentContext as ContextDelegation;
+      afterEachCtxList.foo = app.currentContext as Context;
     });
   });
 
   describe('bar', () => {
     beforeEach(() => {
-      beforeEachCtxList.bar = app.currentContext as ContextDelegation;
+      beforeEachCtxList.bar = app.currentContext as Context;
     });
 
     it('should work', () => {
-      itCtxList.bar = app.currentContext as ContextDelegation;
+      itCtxList.bar = app.currentContext as Context;
     });
 
     afterEach(() => {
-      afterEachCtxList.bar = app.currentContext as ContextDelegation;
+      afterEachCtxList.bar = app.currentContext as Context;
     });
   });
 
   describe('multi it', () => {
-    const itCtxList: Array<ContextDelegation> = [];
+    const itCtxList: Array<Context> = [];
 
     it('should work 1', () => {
-      itCtxList.push(app.currentContext as ContextDelegation);
+      itCtxList.push(app.currentContext as Context);
     });
 
     it('should work 2', () => {
-      itCtxList.push(app.currentContext as ContextDelegation);
+      itCtxList.push(app.currentContext as Context);
     });
 
     after(() => {
