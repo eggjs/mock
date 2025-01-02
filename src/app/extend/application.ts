@@ -6,8 +6,8 @@ import mergeDescriptors from 'merge-descriptors';
 import { isAsyncFunction, isObject } from 'is-type-of';
 import { mock, restore } from 'mm';
 import type { HttpClient } from 'urllib';
-import { Transport, Logger, LoggerLevel, LoggerMeta } from 'egg-logger';
-import { EggCore, EggCoreOptions, ContextDelegation } from '@eggjs/core';
+import { Transport, EggLogger, LoggerLevel, LoggerMeta } from 'egg-logger';
+import { EggCore, EggCoreOptions, Context } from '@eggjs/core';
 import { getMockAgent, restoreMockAgent } from '../../lib/mock_agent.js';
 import {
   createMockHttpClient, MockResultFunction,
@@ -39,7 +39,7 @@ export interface MockContextData {
   [key: string]: any;
 }
 
-export interface MockContextDelegation extends ContextDelegation {
+export interface MockContext extends Context {
   service: any;
 }
 
@@ -47,9 +47,9 @@ export default abstract class ApplicationUnittest extends EggCore {
   [key: string]: any;
   declare options: MockOptions & EggCoreOptions;
   _mockHttpClient?: MockHttpClientMethod;
-  declare logger: Logger;
-  declare coreLogger: Logger;
-  abstract getLogger(name: string): Logger;
+  declare logger: EggLogger;
+  declare coreLogger: EggLogger;
+  abstract getLogger(name: string): EggLogger;
   declare httpClient: HttpClient;
   declare httpclient: HttpClient;
 
@@ -73,7 +73,7 @@ export default abstract class ApplicationUnittest extends EggCore {
    * };
    * ```
    */
-  mockContext(data?: MockContextData, options?: MockContextOptions): MockContextDelegation {
+  mockContext(data?: MockContextData, options?: MockContextOptions): MockContext {
     data = data ?? {};
     function mockRequest(req: IncomingMessage) {
       for (const key in data?.headers) {
@@ -102,17 +102,17 @@ export default abstract class ApplicationUnittest extends EggCore {
       if (this.currentContext && !this.currentContext[REUSED_CTX]) {
         mockRequest(this.currentContext.request.req);
         this.currentContext[REUSED_CTX] = true;
-        return this.currentContext as MockContextDelegation;
+        return this.currentContext as MockContext;
       }
     }
     const ctx = this.createContext(req, res);
     if (options.mockCtxStorage) {
       mock(this.ctxStorage, 'getStore', () => ctx);
     }
-    return ctx as MockContextDelegation;
+    return ctx as MockContext;
   }
 
-  async mockContextScope(fn: (ctx?: MockContextDelegation) => Promise<any>, data?: MockContextData) {
+  async mockContextScope(fn: (ctx?: MockContext) => Promise<any>, data?: MockContextData) {
     const ctx = this.mockContext(data, {
       mockCtxStorage: false,
       reuseCtxStorage: false,
@@ -404,7 +404,7 @@ export default abstract class ApplicationUnittest extends EggCore {
    * @param {String|Logger} [logger] - logger instance, default is `app.logger`
    * @function App#mockLog
    */
-  mockLog(logger?: string | Logger) {
+  mockLog(logger?: string | EggLogger) {
     logger = logger ?? this.logger;
     if (typeof logger === 'string') {
       logger = this.getLogger(logger);
@@ -424,7 +424,7 @@ export default abstract class ApplicationUnittest extends EggCore {
     });
   }
 
-  __checkExpectLog(expectOrNot: boolean, str: string | RegExp, logger?: string | Logger) {
+  __checkExpectLog(expectOrNot: boolean, str: string | RegExp, logger?: string | EggLogger) {
     logger = logger || this.logger;
     if (typeof logger === 'string') {
       logger = this.getLogger(logger);
@@ -460,7 +460,7 @@ export default abstract class ApplicationUnittest extends EggCore {
    * @param {String|Logger} [logger] - logger instance, default is `ctx.logger`
    * @function App#expectLog
    */
-  expectLog(str: string | RegExp, logger?: string | Logger) {
+  expectLog(str: string | RegExp, logger?: string | EggLogger) {
     this.__checkExpectLog(true, str, logger);
   }
 
@@ -470,7 +470,7 @@ export default abstract class ApplicationUnittest extends EggCore {
    * @param {String|Logger} [logger] - logger instance, default is `ctx.logger`
    * @function App#notExpectLog
    */
-  notExpectLog(str: string | RegExp, logger?: string | Logger) {
+  notExpectLog(str: string | RegExp, logger?: string | EggLogger) {
     this.__checkExpectLog(false, str, logger);
   }
 
