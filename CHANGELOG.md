@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.5](https://github.com/eggjs/mock/compare/v6.0.4...v6.0.5) (2025-01-02)
+
+
+### Bug Fixes
+
+* remove ContextDelegation ([#183](https://github.com/eggjs/mock/issues/183)) ([f4051d0](https://github.com/eggjs/mock/commit/f4051d03e45f2a4a55e5294a74e6b254200260e9))
+
 ## [6.0.4](https://github.com/eggjs/mock/compare/v6.0.3...v6.0.4) (2025-01-01)
 
 
