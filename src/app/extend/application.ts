@@ -6,7 +6,7 @@ import mergeDescriptors from 'merge-descriptors';
 import { isAsyncFunction, isObject } from 'is-type-of';
 import { mock, restore } from 'mm';
 import type { HttpClient } from 'urllib';
-import { Transport, EggLogger, LoggerLevel, LoggerMeta } from 'egg-logger';
+import { Transport, Logger, LoggerLevel, LoggerMeta } from 'egg-logger';
 import { EggCore, EggCoreOptions, Context } from '@eggjs/core';
 import { getMockAgent, restoreMockAgent } from '../../lib/mock_agent.js';
 import {
@@ -47,10 +47,6 @@ export default abstract class ApplicationUnittest extends EggCore {
   [key: string]: any;
   declare options: MockOptions & EggCoreOptions;
   _mockHttpClient?: MockHttpClientMethod;
-  declare logger: EggLogger;
-  declare coreLogger: EggLogger;
-  abstract getLogger(name: string): EggLogger;
-  declare httpClient: HttpClient;
   declare httpclient: HttpClient;
 
   /**
@@ -404,7 +400,7 @@ export default abstract class ApplicationUnittest extends EggCore {
    * @param {String|Logger} [logger] - logger instance, default is `app.logger`
    * @function App#mockLog
    */
-  mockLog(logger?: string | EggLogger) {
+  mockLog(logger?: string | Logger) {
     logger = logger ?? this.logger;
     if (typeof logger === 'string') {
       logger = this.getLogger(logger);
@@ -424,7 +420,7 @@ export default abstract class ApplicationUnittest extends EggCore {
     });
   }
 
-  __checkExpectLog(expectOrNot: boolean, str: string | RegExp, logger?: string | EggLogger) {
+  __checkExpectLog(expectOrNot: boolean, str: string | RegExp, logger?: string | Logger) {
     logger = logger || this.logger;
     if (typeof logger === 'string') {
       logger = this.getLogger(logger);
@@ -460,7 +456,7 @@ export default abstract class ApplicationUnittest extends EggCore {
    * @param {String|Logger} [logger] - logger instance, default is `ctx.logger`
    * @function App#expectLog
    */
-  expectLog(str: string | RegExp, logger?: string | EggLogger) {
+  expectLog(str: string | RegExp, logger?: string | Logger) {
     this.__checkExpectLog(true, str, logger);
   }
 
@@ -470,7 +466,7 @@ export default abstract class ApplicationUnittest extends EggCore {
    * @param {String|Logger} [logger] - logger instance, default is `ctx.logger`
    * @function App#notExpectLog
    */
-  notExpectLog(str: string | RegExp, logger?: string | EggLogger) {
+  notExpectLog(str: string | RegExp, logger?: string | Logger) {
     this.__checkExpectLog(false, str, logger);
   }
 
