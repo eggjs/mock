@@ -5,6 +5,7 @@ import path from 'node:path';
 import { Base } from 'sdk-base';
 import { detectPort } from 'detect-port';
 import { importModule } from '@eggjs/utils';
+import { type Agent } from 'egg';
 import { sleep, rimraf, getProperty, getSourceDirname } from './utils.js';
 import { formatOptions } from './format_options.js';
 import { context } from './context.js';
@@ -93,7 +94,7 @@ class MockApplicationWorker extends Base {
 
     // https://github.com/eggjs/egg/blob/8bb7c7e7d59d6aeca4b2ed1eb580368dcb731a4d/lib/egg.js#L125
     // egg single mode mount this at start(), so egg-mock should impel it.
-    app.agent = agent;
+    app.agent = agent as AgentUnittest & Agent;
     Reflect.set(agent, 'app', app);
 
     // egg-mock plugin need to override egg context

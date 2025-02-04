@@ -30,7 +30,7 @@ describe('test/app_proxy.test.ts', () => {
 
     it('should not set property', async () => {
       assert.throws(() => {
-        app.curl = function* mockCurl() {
+        (app as any).curl = async function mockCurl() {
           return 'mock';
         };
       }, /can't set curl before ready/);
@@ -100,11 +100,11 @@ describe('test/app_proxy.test.ts', () => {
     after(() => app.close());
 
     it('should override property with setter', async () => {
-      app.curl = async function mockCurl() {
+      (app as any).curl = async function mockCurl() {
         return 'mock';
       };
-      const data = await app.curl();
-      assert(data === 'mock');
+      const data = await app.curl('http://127.0.0.1:7001');
+      assert.equal(data, 'mock');
     });
 
     it('should ignore when set property on MockApplication', async () => {

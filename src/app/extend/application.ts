@@ -5,9 +5,9 @@ import assert from 'node:assert';
 import mergeDescriptors from 'merge-descriptors';
 import { isAsyncFunction, isObject } from 'is-type-of';
 import { mock, restore } from 'mm';
-import type { HttpClient } from 'urllib';
 import { Transport, EggLogger, LoggerLevel, LoggerMeta } from 'egg-logger';
-import { EggCore, EggCoreOptions, Context } from '@eggjs/core';
+import { Application, type Context, type Agent } from 'egg';
+import type { MockAgent } from 'urllib';
 import { getMockAgent, restoreMockAgent } from '../../lib/mock_agent.js';
 import {
   createMockHttpClient, MockResultFunction,
@@ -16,6 +16,7 @@ import {
 } from '../../lib/mock_httpclient.js';
 import { request as supertestRequest, EggTestRequest } from '../../lib/supertest.js';
 import { MockOptions } from '../../lib/types.js';
+import type AgentUnittest from './agent.js';
 
 const debug = debuglog('@eggjs/mock/app/extend/application');
 
@@ -40,18 +41,13 @@ export interface MockContextData {
 }
 
 export interface MockContext extends Context {
-  service: any;
 }
 
-export default abstract class ApplicationUnittest extends EggCore {
+export default abstract class ApplicationUnittest extends Application {
   [key: string]: any;
-  declare options: MockOptions & EggCoreOptions;
+  declare options: Application['options'] & MockOptions;
   _mockHttpClient?: MockHttpClientMethod;
-  declare logger: EggLogger;
-  declare coreLogger: EggLogger;
-  abstract getLogger(name: string): EggLogger;
-  declare httpClient: HttpClient;
-  declare httpclient: HttpClient;
+  declare agent: AgentUnittest & Agent;
 
   /**
    * mock Context
@@ -117,7 +113,7 @@ export default abstract class ApplicationUnittest extends EggCore {
       mockCtxStorage: false,
       reuseCtxStorage: false,
     });
-    return await this.ctxStorage.run(ctx as any, async () => {
+    return await this.ctxStorage.run(ctx, async () => {
       return await fn(ctx);
     });
   }
@@ -346,7 +342,7 @@ export default abstract class ApplicationUnittest extends EggCore {
    * get mock httpclient agent
    * @function App#mockHttpclientAgent
    */
-  mockAgent() {
+  mockAgent(): MockAgent {
     return getMockAgent(this);
   }
 
