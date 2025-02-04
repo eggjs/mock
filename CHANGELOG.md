@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.6](https://github.com/eggjs/mock/compare/v6.0.5...v6.0.6) (2025-02-04)
+
+
+### Bug Fixes
+
+* type defines ([#185](https://github.com/eggjs/mock/issues/185)) ([df4208c](https://github.com/eggjs/mock/commit/df4208c1c4ead35ee0d46d4e95a3ef11083b19c8))
+
 ## [6.0.5](https://github.com/eggjs/mock/compare/v6.0.4...v6.0.5) (2025-01-02)
 
 
