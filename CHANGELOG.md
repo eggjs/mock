@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.7](https://github.com/eggjs/mock/compare/v6.0.6...v6.0.7) (2025-02-08)
+
+
+### Bug Fixes
+
+* app.mockContext() should return egg context instance ([#186](https://github.com/eggjs/mock/issues/186)) ([940f321](https://github.com/eggjs/mock/commit/940f321abd2f46b4ea795761e0a420c280003b01))
+
 ## [6.0.6](https://github.com/eggjs/mock/compare/v6.0.5...v6.0.6) (2025-02-04)
 
 
