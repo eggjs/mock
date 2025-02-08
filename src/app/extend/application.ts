@@ -7,7 +7,8 @@ import { isAsyncFunction, isObject } from 'is-type-of';
 import { mock, restore } from 'mm';
 import type { HttpClient } from 'urllib';
 import { Transport, Logger, LoggerLevel, LoggerMeta } from 'egg-logger';
-import { EggCore, EggCoreOptions, Context } from '@eggjs/core';
+import { EggCore, type EggCoreOptions, type Context as EggCoreContext } from '@eggjs/core';
+import type { Context as EggContext } from 'egg';
 import { getMockAgent, restoreMockAgent } from '../../lib/mock_agent.js';
 import {
   createMockHttpClient, MockResultFunction,
@@ -39,7 +40,8 @@ export interface MockContextData {
   [key: string]: any;
 }
 
-export interface MockContext extends Context {
+// @ts-expect-error ignore type error
+export interface MockContext extends EggContext, EggCoreContext {
   service: any;
 }
 
